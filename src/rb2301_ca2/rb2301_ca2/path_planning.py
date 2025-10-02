@@ -16,6 +16,7 @@ from tf_transformations import euler_from_quaternion
 # from tf2_msgs.msg import TFMessage
 from nav_msgs.msg import Odometry
 from PIL import Image
+from geometry_msgs.msg import Twist
 
 
 np.set_printoptions(
@@ -23,23 +24,31 @@ np.set_printoptions(
 )  # Print numpy arrays to specified d.p., suppress scientific notation (e.g. 1e-5), and do not truncate
 
 
-class OdomNode(Node):
-    '''Node to receive ground_truth pose information from odom in gazebo sim'''
-    def __init__(self):
-        super().__init__('odom')
+class WaypointNode(Node):
+    '''Node to move robot to received waypoints, using pose info from gazebo/optitrack to assist in movement'''
+    def __init__(self, waypoints:list, sim:bool=True):
+        super().__init__('waypoint')
+        self.get_logger().info("Starting WaypointNode")
+
+        self.sim = sim
 
         # Subscribe to the dynamic_pose topic from Gazebo that publishes ground-truth pose data
-        self.subscription = self.create_subscription( 
-            Odometry,
-            'odom',
-            self.listener_callback, 2)
+        if self.sim:
+            self.subscription = self.create_subscription(Odometry, 'odom', self.listener_callback, 2)
+            
+        self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10) # Publish to cmd_vel node       
+        self.timer = self.create_timer(1, self.timer_callback)  # Runs at 20Hz. Can be changed.
         
-        self.subscription  # prevent unused variable warning
-        self.get_logger().info("Starting tf tracker")
+        self.waypoints = waypoints
+        self.current_waypoint_idx = 0
         self.pose = None
 
-        self.timer = self.create_timer(1, self.timer_callback)  # Runs at 20Hz. Can be changed.
 
+    def move_2D(self, x:float=0.0, y:float=0.0, turn:float=0.0):
+        twist_msg = Twist()
+        twist_msg.linear.x, twist_msg.linear.y, twist_msg.linear.z = float(x), float(y), 0.0
+        twist_msg.angular.x, twist_msg.angular.y, twist_msg.angular.z = 0.0, 0.0, float(turn)
+        self.publisher_.publish(twist_msg)
 
     def listener_callback(self, msg):
         '''This callback will run everytime the rclpy executor spins'''
@@ -47,7 +56,7 @@ class OdomNode(Node):
         quat = latest_pose_msg.orientation
         rpy_euler = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
         heading = np.rad2deg(rpy_euler[2])
-        self.pose = (latest_pose_msg.position.x, latest_pose_msg.position.y, heading)
+        self.pose = np.array((latest_pose_msg.position.x, latest_pose_msg.position.y, heading))
         return self.pose
     
 
@@ -56,6 +65,20 @@ class OdomNode(Node):
         if self.pose is None:
             return # Does not run if no pose received
         print(self.pose)
+        
+        if self.current_waypoint_idx == len(self.waypoints):
+            self.get_logger().info("Destination reached, shutting down!")
+            self.destroy_node()
+            rclpy.shutdown()
+        else:
+            target_waypoint = np.array(self.waypoints[self.current_waypoint_idx])
+            if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.1:
+                self.current_waypoint_idx += 1
+            else:
+                x = target_waypoint[0] - self.pose[0]
+                y = target_waypoint[1] - self.pose[1]
+                self.move_2D(x, y)
+
 
 
 
@@ -252,33 +275,31 @@ def trace_path(cell_details:list, destination:tuple):
 
     return path
 
-def draw_path(grid:Grid, path:list):
-    '''Creates an image of the maze and path taken. Maze walls in blue, empty space in white, path taken in green and end position in red'''
-    # completed_grid = grid.grid.astype(int).tolist()
-    # for x, y in path:
-    #     # print(completed_grid, x, y)
-    #     completed_grid[x][y] = 'x'
-    # completed_grid[grid.starting_position[0]][grid.starting_position[1]] = 'S' # Label start coordinates
-    # completed_grid[grid.goal_position[0]][grid.goal_position[1]] = 'G' # Label end goal coordinates
 
-    # # print("Completed grid: ")
-    # # for x in range(len(completed_grid)):
-    # #     for y in range(len(completed_grid[0])):
-    # #         completed_grid[x][y] = str(completed_grid[x][y]).rjust(2)
-    
-    # # for row in completed_grid:
-    # #     print(row)
+def move_direction(starting_cell, destination_cell):
+    return (destination_cell[0]-starting_cell[0], destination_cell[1]-starting_cell[1])
 
+
+def convert_path_to_waypoints(path:list):
+    waypoints = [path[0]]
+    for idx in range(1, len(path)-1):
+        if move_direction(path[idx-1], path[idx]) != move_direction(path[idx], path[idx+1]):
+            waypoints.append(path[idx])
+    waypoints.append(path[-1])
+    return waypoints
+
+
+def draw_path(grid:Grid, path:list, waypoints:list):
+    '''Creates an image of the maze and path taken. 
+    Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
     image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
     image_grid[grid.grid == 0] = (255,255,255)
     image_grid[grid.grid == 1] = (0,0,255)
     for x, y in path:
         image_grid[x][y] = (0,255,0)
 
-    # image_grid[grid.starting_position] = (255,0,0)
-    image_grid[grid.goal_position] = (255,0,0)
-    # img = Image.fromarray(completed_grid, 'L')
-    # print(completed_grid)
+    for point in waypoints:
+        image_grid[point] = (255,0,0)
     image_grid = image_grid[::-1]
     img = Image.fromarray(image_grid, 'RGB')
 
@@ -385,12 +406,14 @@ def main(args=None):
 
     # rclpy.spin_once(mapper)
     map = np.load('/home/marmot/Documents/rb2301/map.npy')
+    resolution, x_start, y_start = 0.15, -0.15, -4.2
 
-    start, goal = (6,5), (38,32)
+    start, goal = (6,5), (28,7)
     # start, goal = (-5, -5), (-2,-2)
     # start, goal = (4,8), (4,5) 
     # np.save('map.npy', mapper.map)
     grid = Grid(map, starting_position=start, goal_position=goal)
+    # 
     print(grid.grid.shape, grid.grid[start], grid.grid[goal])
 
     if grid.check_grid_validity():
@@ -399,16 +422,19 @@ def main(args=None):
         print("Invalid start and goal")
     solution = a_star_search(grid)
     print(f"Solution: {solution}")
-
-
-    draw_path(grid, solution)
-
-    # rclpy.spin(odom)
+    waypoints = convert_path_to_waypoints(solution)
+    print(waypoints)
+    coordinate_waypoints = []
+    for waypoint in waypoints:
+        coordinate_waypoints.append((waypoint[0]*resolution+x_start, waypoint[1]*resolution+y_start))
     
-            
+    print(coordinate_waypoints)
+
+    draw_path(grid, solution, waypoints)
     # mapper.destroy_node()
-    # opti.destroy_node()
-    # odom.destroy_node()
+
+    # waypoint = WaypointNode(waypoints)
+    # rclpy.spin(waypoint)
     # rclpy.shutdown()
 
 
