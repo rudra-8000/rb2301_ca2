@@ -287,7 +287,7 @@
     <include>
       <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
       <name>wall_23</name>
-      <pose>0.6 -2.4 -0.2 0 0 0</pose>
+      <pose>0.5 -2.4 -0.2 0 0 0</pose>
     </include> 
 
     <include>
@@ -311,7 +311,7 @@
     <include> 
       <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/drawer/2</uri>
       <name>drawer_2</name>
-      <pose>3.4 -0.8 0.0 0 0 0</pose>
+      <pose>3.3 -0.8 0.0 0 0 0</pose>
     </include> 
 
     <include> 
@@ -335,25 +335,20 @@
     <include>
       <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/desk/2</uri>
       <name>desk_3</name>
-      <pose>4.2 -2.8 -0.1 0 0 0</pose>
+      <pose>4.2 -2.9 -0.1 0 0 0</pose>
     </include> 
 
     <include>
       <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/desk/2</uri>
       <name>desk_4</name>
-      <pose>3.9 -0.4 -0.1 0 0 0</pose>
+      <pose>3.8 -0.5 -0.1 0 0 0</pose>
     </include> 
 
     <include>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes
       <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/litterbin/2</uri>
       <name>bin</name>
-      <pose>1.0 -3.4 0.0 0 0 1.57079633</pose>
-    </include> 
-    <!-- <include>
-      <uri>file:///src/rb2301_gz/meshes/litterbin/2</uri>
-      <name>bin</name>
-      <pose>1.0 -3.4 0.0 0 0 1.57079633</pose>
-    </include> -->
+      <pose>0.85 -3.4 0.0 0 0 1.57079633</pose>
+    </include>  -->
 
     <!-- Add stuff here-->
 

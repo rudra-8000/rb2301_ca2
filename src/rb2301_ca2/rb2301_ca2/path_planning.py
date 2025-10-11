@@ -27,11 +27,12 @@ max_translate_velocity = 1.0
 
 is_simulation = True
 
-goal_list = [()]
+goal_list = [(3.4, -3.6), (3, 0.2), (2.6, -3.6), (-0.4, -3.8)]
+
 
 class WaypointNode(Node):
     '''Node to move robot to received waypoints, using pose info from either gazebo odometer or optitrack'''
-    def __init__(self, goal_list:list, sim:bool=True):
+    def __init__(self, map_array:np.array, goal_list:list, sim:bool=True):
         super().__init__('waypoint')
         self.get_logger().info("Starting WaypointNode")
 
@@ -55,10 +56,16 @@ class WaypointNode(Node):
             
         self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10) # Publish to cmd_vel node       
         self.timer = self.create_timer(1, self.timer_callback)  # Runs at 20Hz. Can be changed.
-        
-        self.waypoints = None
-        self.current_waypoint_idx = 0
+
         self.pose = None
+        self.map_array = map_array
+    
+        self.waypoint_list = None
+        self.current_waypoint_idx = 0
+
+        self.goal_list = goal_list
+        self.current_goal_idx = 0
+        self.goal_reached = True
 
     def optitrack_callback(self, msg:PoseStamped):
         '''Callback to calculate 2D pose info from Optitrack node. Pose info includes x and y coordinates, as well as heading in degrees.
@@ -90,33 +97,73 @@ class WaypointNode(Node):
 
 
     def set_waypoints(self, waypoints:list):
+        self.goal_reached = False
         self.waypoints = waypoints
         self.current_waypoint_idx = 0
 
 
     def timer_callback(self):
         """Controller loop"""
-        if self.pose is None or self.waypoints is None:
-            return # Does not run if no pose received
-        
-        
-        if self.current_waypoint_idx == len(self.waypoints):
-            self.get_logger().info("Destination reached, shutting down!")
-            self.waypoints = None
+        if self.pose is None:
+            return # Does not run if no pose received from Odom or Optitrack
+        # print(f"pose: {self.pose}")
+
+        if self.goal_reached:
+            if self.current_goal_idx >= len(self.goal_list):
+                return # Finished exploring
+            
+            start_coords = self.pose[:2]
+            start_coords = np.round(start_coords, 1)
+            x_start, y_start, resolution = -1.0, -5.0, .2
+            goal_coords = self.goal_list[self.current_goal_idx]
+
+            start = (int(start_coords[0]//resolution - x_start//resolution), int(start_coords[1]//resolution - y_start//resolution))
+            goal = (int(goal_coords[0]//resolution - x_start//resolution), int(goal_coords[1]//resolution - y_start//resolution))
+
+            grid = Grid(self.map_array, starting_position=start, goal_position=goal)
+            
+            if not grid.check_grid_validity():
+                print("Invalid start and/or goal")
+
+            solution_path = a_star_search(grid)
+            waypoint_list = convert_path_to_waypoints(solution_path)
+            draw_grid_map(grid, waypoint_list, solution_path)
+
+            coordinate_waypoints = []
+            for point in waypoint_list:
+                coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
+
+            self.set_waypoints(coordinate_waypoints)
 
         else:
-            target_waypoint = np.array(self.waypoints[self.current_waypoint_idx])
-            print(self.pose, target_waypoint)
-            
-            if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.2:
-                self.move_2D()
-                if self.current_waypoint_idx+1 != len(self.waypoints):
-                    print(f"Waypoint {target_waypoint} reached. Next target is {self.waypoints[self.current_waypoint_idx+1]}")
-                self.current_waypoint_idx += 1
+            if self.current_waypoint_idx == len(self.waypoints):
+                self.get_logger().info("Goal reached!")
+                self.goal_reached = True
+                self.current_goal_idx += 1
+
             else:
-                x = target_waypoint[0] - self.pose[0]
-                y = target_waypoint[1] - self.pose[1]
-                self.move_2D(x, y)
+                target_waypoint = np.array(self.waypoints[self.current_waypoint_idx])
+                print(f"Target: {target_waypoint}")
+                if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.05:
+                    
+                    self.move_2D()
+                    if self.current_waypoint_idx+1 != len(self.waypoints):
+                        print(f"Waypoint {target_waypoint} reached. Next target is {self.waypoints[self.current_waypoint_idx+1]}")
+                    self.current_waypoint_idx += 1
+                else:
+                    x = target_waypoint[0] - self.pose[0]
+                    y = target_waypoint[1] - self.pose[1]
+                    # print(f"Move: {x, y}")
+                    if 0.0 < x < 0.15:
+                        x = 0.15
+                    elif -0.15 < x < 0.0:
+                        x = -0.15
+                    if 0.0 < y < 0.15:
+                        y = 0.15
+                    elif -0.15 < y < 0.0:
+                        y = -0.15
+                    # print(f"Move: {x, y}")
+                    self.move_2D(x, y)
 
 
 
@@ -164,65 +211,26 @@ class Grid():
     starting_position : tuple of starting coordinates / indices within the grid
     goal_position : tuple of goal coordinates / indices within the grid. If negative indices given, will count backwards 
     '''
-    def __init__(self, grid_array:np.array=np.array([]), generate_grid_size:tuple=None, num_obstacles:int=None, 
-                 starting_position:tuple=(0,0), goal_position:tuple=(-1,-1)):
+    def __init__(self, grid_array:np.array=np.array([]), starting_position:tuple=(0,0), goal_position:tuple=(-1,-1)):
 
-        if grid_array.any():
-            self.grid = grid_array
-        elif generate_grid_size:
-            self.grid = self.generate_random_grid(generate_grid_size, num_obstacles, goal_position)
-        else:
-            print("Please input either a grid or grid_size to generate")
-            raise AttributeError
-        
+        self.grid = grid_array
         self.shape = self.grid.shape
         self.starting_position = starting_position
 
         # If goal position given with negative index, need to convert to +ve
         if goal_position[0] < 0:
-            reward_x = self.shape[0] + goal_position[0]
+            goal_x = self.shape[0] + goal_position[0]
         else:
-            reward_x = goal_position[0]
+            goal_x = goal_position[0]
         if goal_position[1] < 0:
-            reward_y = self.shape[1] + goal_position[1]
+            goal_y = self.shape[1] + goal_position[1]
         else:
-            reward_y = goal_position[1]   
+            goal_y = goal_position[1]   
 
-        self.goal_position = (reward_x, reward_y)
-
-    def generate_random_grid(self, grid_size:tuple, num_obstacles:int=None, goal_position:tuple=(-1,-1)):
-        # Generates a random grid using the given 2D dimensions, and num_obstacles
-        if not num_obstacles:
-            # If no num_obstacles given, use the default where 25% of the grid are obstacles
-            num_obstacles = round(grid_size[0] * grid_size[1] * 0.25)
-
-        while True:
-            # Continuous loop to generate grid and check if it's valid. If valid, break out of the loop
-            grid = np.zeros(grid_size)
-            grid[goal_position] = 1 # Set goal
-            available_grids = np.arange(grid_size[0] * grid_size[1])
-
-            # The top left and bottom right of the grids are start & finish and should not have obstacles
-            available_grids = np.delete(available_grids, 0)
-            available_grids = np.delete(available_grids, -1)  # EDIT: Replace this with actual goal_position
-            obstacle_list = []
-            
-            for _ in range(num_obstacles):
-                # Randomly place obstacles in the remaining available grid tiles
-                random_grid = np.random.choice(available_grids)
-                obstacle_list.append(random_grid)
-                obstacle_x, obstacle_y = random_grid // grid_size[0], random_grid % grid_size[0]
-                grid[obstacle_x, obstacle_y] = -1 # Set obstacles to -1
-                np.delete(available_grids, random_grid-1)
-
-            if self.check_grid_validity(grid.copy()):
-                # If grid is valid (ie. path exists between start and goal), then break. Else generate another grid
-                break
-
-        return grid
+        self.goal_position = (goal_x, goal_y)
 
     def check_grid_validity(self):
-        # Use flood fill to check if there's a viable path
+        # Use flood fill to check if there's a viable path between start and goal positions
         grid = self.grid.copy()
         flood_stack = [(self.goal_position[0], self.goal_position[1])]
         while flood_stack:
@@ -290,7 +298,7 @@ def convert_path_to_waypoints(path:list):
     return waypoints
 
 
-def draw_path(grid:Grid, waypoints:list=(), path:list=(), obstacle_threshold:float=50):
+def draw_grid_map(grid:Grid, waypoints:list=(), path:list=(), obstacle_threshold:float=50):
     '''Creates an image of the maze and path taken. 
     Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
     image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
@@ -314,26 +322,6 @@ def draw_path(grid:Grid, waypoints:list=(), path:list=(), obstacle_threshold:flo
 
     img.show()
 
-
-def draw_map(grid:Grid):
-    '''Creates a greyscale of the maze and path taken. 
-    Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
-    reversed_grid = np.flip(grid.grid, axis=1)[::-1]
-    # image_grid = np.stack((reversed_grid,)*3, axis=2)
-    # image_grid = np.abs(image_grid - np.ones(image_grid.shape, dtype=np.int8)*99)
-    image_grid = np.ones((reversed_grid.shape[0],reversed_grid.shape[1],3), dtype=np.int8)
-
-    # print(image_grid)
-    # print(image_grid.shape, grid.grid.shape)
-    img = Image.fromarray(image_grid, 'RGB')
-
-    # Resize image
-    base_width = 500
-    wpercent = (base_width / float(img.size[0]))
-    hsize = int((float(img.size[1]) * float(wpercent)))
-    img = img.resize((base_width, hsize), Image.Resampling.NEAREST)
-
-    img.show()
 
             
 class Cell:
@@ -391,14 +379,8 @@ def a_star_search(grid:Grid, obstacle_threshold:float=50):
         cell = heapq.heappop(cells_to_visit)
         x, y = cell[1], cell[2]
         visited_cells[x][y] = 1
-        # print(grid.grid[x])
-
-        # print(cell, cells_to_visit,)
-
-        # valid_action_indices = np.flatnonzero(~np.isnan(grid.q_table[x, y]))
-        # valid_actions = [action_list[i] for i in valid_action_indices]
         valid_actions = get_valid_actions(grid, (x,y), obstacle_threshold)
-        # print(len(cells_to_visit))
+
         for action in valid_actions:
             neighbour_cell_x = x + action[0]
             neighbour_cell_y = y + action[1]
@@ -417,10 +399,7 @@ def a_star_search(grid:Grid, obstacle_threshold:float=50):
 
                     # If new neighbour_f value is smaller than what's on the list, or neighbour cell has never been visited
                     if cell_details[neighbour_cell_x][neighbour_cell_y].f > neighbour_f or np.isinf(cell_details[neighbour_cell_x][neighbour_cell_y].f):
-                        # if visited_cells[neighbour_cell_x][neighbour_cell_y] == 0:
-                        # if (neighbour_f, neighbour_cell_x, neighbour_cell_y) not in cells_to_visit:
                         heapq.heappush(cells_to_visit, (neighbour_f, neighbour_cell_x, neighbour_cell_y))
-                        # visited_cells[neighbour_cell_x][neighbour_cell_y] = -1 # Mark as in heap
                         cell_details[neighbour_cell_x][neighbour_cell_y].f = neighbour_f
                         cell_details[neighbour_cell_x][neighbour_cell_y].g = neighbour_g
                         cell_details[neighbour_cell_x][neighbour_cell_y].h = neighbour_h
@@ -435,60 +414,19 @@ def main(args=None):
     print("Starting path planning")
     rclpy.init(args=args)
 
-
-    map = np.load('/home/marmot/Documents/rb2301/ca2_sim_map.npy')
-
-    # mapper = MapNode()
-
-    # rclpy.spin_once(mapper)
-    # print(mapper.details)
-    # mapper.destroy_node()
+    map_array = np.load('/home/marmot/Documents/rb2301/ca2_sim_map.npy')
+    map_array[8:11, 7:11] = 99
+    map_array[10, 15:17] = 99
+    map_array[15, 21:25] = 99
+    np.save('/home/marmot/Documents/rb2301/ca2_sim_map.npy', map_array)
+    grid = Grid(map_array)
+    draw_grid_map(grid)
     
+    waypoint = WaypointNode(map_array, goal_list)
+    while waypoint.pose is None:
+        rclpy.spin_once(waypoint)
 
-    x_start, y_start, resolution = -1.0, -5.0, .2
-
-    # waypoint = WaypointNode(goal_list)
-    # while waypoint.pose is None:
-    #     rclpy.spin_once(waypoint)
-    # start_coords = waypoint.pose[:2]
-    start_coords = (0, 0)
-    goal_coords = (3.4, -3)
-    goal_coords = (3.4, -3.6)
-    # goal_coords = (3, 0.2)
-    goal_coords = (2.0, -3.6)
-    goal_coords = (-0.4, -3.8)
-
-    start = (int(start_coords[0]//resolution - x_start//resolution), int(start_coords[1]//resolution - y_start//resolution))
-    goal = (int(goal_coords[0]//resolution - x_start//resolution), int(goal_coords[1]//resolution - y_start//resolution))
-
-    print(start, goal)
-    # np.save('/home/marmot/Documents/rb2301/ca2_sim_map.npy', mapper.map)
-    grid = Grid(map, starting_position=start, goal_position=goal)
-    draw_path(grid, waypoints=(start, goal))
-    
-    if grid.check_grid_validity():
-        print("Map start and goal valid")
-    else:
-        print("Invalid start and/or goal")
-
-    solution = a_star_search(grid)
-    print(f"Full solution: {solution}")
-    waypoints = convert_path_to_waypoints(solution)
-    print(f"Full solution: {waypoints}")
-    coordinate_waypoints = []
-    for point in waypoints:
-        coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
-    
-    rounded_waypoints = []
-    for point in coordinate_waypoints:
-        rounded_waypoints.append((round(point[0], 1), round(point[1], 1)))
-    print(rounded_waypoints)
-
-    
-    # draw_path(grid, solution, waypoints)
-
-    # waypoint.set_waypoints(rounded_waypoints)
-    # rclpy.spin(waypoint)
+    rclpy.spin(waypoint)
     
     rclpy.shutdown()
 

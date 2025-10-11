@@ -7,6 +7,26 @@ from launch_ros.substitutions import FindPackageShare
 from launch.actions import SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution, Command
 
+
+
+def modify_sdf_file():
+    import os
+    import xml.etree.ElementTree as ET
+    workspace_src = os.path.dirname(os.path.realpath(__file__))[:-6]
+    print(workspace_src)
+    overwrite_file =  workspace_src + 'worlds/path_planning_world_ca2.sdf'
+    print("Modifing path_planning world file paths")
+    tree = ET.parse(overwrite_file)
+    root = tree.getroot()
+    world = root[0]
+    for element in reversed(world): # Remove all coke obstacles
+        if element.tag == 'include':
+            model_path = element[0].text.split('openrobotics/models')[1]
+            model_path = workspace_src + 'meshes' + model_path
+            element[0].text = model_path
+    tree.write(overwrite_file)
+# modify_sdf_file()
+
 def generate_launch_description():
     ld = LaunchDescription()
     pkg_rb2301_gz = FindPackageShare('rb2301_gz') 
@@ -35,7 +55,7 @@ def generate_launch_description():
         'world', 
         # default_value='empty.sdf',
         # default_value='obstacles_world_ca1.sdf', # RB2301 CA1 Obstacles
-        default_value='path_planning_ca2.sdf', # RB2301 Path-Planning
+        default_value='path_planning_world_ca2.sdf', # RB2301 Path-Planning
         description='Name of the Gazebo world file to load'
     )
     path_world = PathJoinSubstitution([
@@ -83,7 +103,7 @@ def generate_launch_description():
     )
     ld.add_action(launch_gz_sim)
     
-    x_arg = DeclareLaunchArgument('x', default_value='0.0', description='Initial x-coordinates within maze')
+    x_arg = DeclareLaunchArgument('x', default_value='0.05', description='Initial x-coordinates within maze')
     y_arg = DeclareLaunchArgument('y', default_value='0.0', description='Initial y-coordinates within maze')
     yaw_arg = DeclareLaunchArgument('yaw', default_value='0.0', description='Initial yaw rotation (in radians) within maze' )
     ld.add_action(x_arg)
