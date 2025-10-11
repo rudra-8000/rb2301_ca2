@@ -25,8 +25,10 @@ np.set_printoptions(
 
 max_translate_velocity = 1.0
 
+is_simulation = True
+
 class WaypointNode(Node):
-    '''Node to move robot to received waypoints, using pose info from gazebo/optitrack to assist in movement'''
+    '''Node to move robot to received waypoints, using pose info from either gazebo odometer or optitrack'''
     def __init__(self, sim:bool=True):
         super().__init__('waypoint')
         self.get_logger().info("Starting WaypointNode")
@@ -35,7 +37,19 @@ class WaypointNode(Node):
 
         # Subscribe to the dynamic_pose topic from Gazebo that publishes ground-truth pose data
         if self.sim:
-            self.subscription = self.create_subscription(Odometry, 'odom', self.listener_callback, 2)
+            self.subscription = self.create_subscription(Odometry, 'odom', self.odomoter_callback, 2)
+        else:
+            qos_profile = QoSProfile(
+                depth=2,
+                reliability=ReliabilityPolicy.BEST_EFFORT
+                )
+
+            self.map_sub = self.create_subscription( 
+                PoseStamped,
+                '/vrpn_mocap/bingda/pose',
+                self.optitrack_callback, 
+                qos_profile
+                )
             
         self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10) # Publish to cmd_vel node       
         self.timer = self.create_timer(1, self.timer_callback)  # Runs at 20Hz. Can be changed.
@@ -44,6 +58,24 @@ class WaypointNode(Node):
         self.current_waypoint_idx = 0
         self.pose = None
 
+    def optitrack_callback(self, msg:PoseStamped):
+        '''Callback to calculate 2D pose info from Optitrack node. Pose info includes x and y coordinates, as well as heading in degrees.
+        This callback will run everytime the rclpy executor spins'''
+        x, y = msg.pose.position.x, msg.pose.position.y
+        rpy_euler = euler_from_quaternion([msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
+        heading = np.rad2deg(rpy_euler[2])
+        self.pose = np.array((x,y,heading))
+        return self.pose
+
+    def odomoter_callback(self, msg):
+        '''Callback to calculate 2D pose info from Gazebo odomoter. Pose info includes x and y coordinates, as well as heading in degrees.
+        This callback will run everytime the rclpy executor spins'''
+        latest_pose_msg = msg.pose.pose 
+        quat = latest_pose_msg.orientation
+        rpy_euler = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
+        heading = np.rad2deg(rpy_euler[2])
+        self.pose = np.array((latest_pose_msg.position.x, latest_pose_msg.position.y, heading))
+        return self.pose
 
     def move_2D(self, x:float=0.0, y:float=0.0, turn:float=0.0):
         twist_msg = Twist()
@@ -54,15 +86,6 @@ class WaypointNode(Node):
         twist_msg.angular.x, twist_msg.angular.y, twist_msg.angular.z = 0.0, 0.0, float(turn)
         self.publisher_.publish(twist_msg)
 
-    def listener_callback(self, msg):
-        '''This callback will run everytime the rclpy executor spins'''
-        latest_pose_msg = msg.pose.pose 
-        quat = latest_pose_msg.orientation
-        rpy_euler = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
-        heading = np.rad2deg(rpy_euler[2])
-        self.pose = np.array((latest_pose_msg.position.x, latest_pose_msg.position.y, heading))
-        return self.pose
-    
 
     def set_waypoints(self, waypoints:list):
         self.waypoints = waypoints
@@ -92,45 +115,6 @@ class WaypointNode(Node):
                 x = target_waypoint[0] - self.pose[0]
                 y = target_waypoint[1] - self.pose[1]
                 self.move_2D(x, y)
-
-
-
-
-class OptitrackNode(Node):
-    '''ROS2 node to read pose data published by optitrack'''
-    def __init__(self):
-        super().__init__('optitrack')
-        self.get_logger().info("Starting Optitrack subscriber")
-
-        qos_profile = QoSProfile(
-            depth=2,
-            reliability=ReliabilityPolicy.BEST_EFFORT
-        )
-
-        self.map_sub = self.create_subscription( 
-            PoseStamped,
-            '/vrpn_mocap/bingda/pose',
-            self.sub_optitrack_callback, 
-            qos_profile
-            )
-        
-        # self.timer = self.create_timer(0.05, self.timer_callback)
-        self.pose = None
-        self.timer = self.create_timer(1, self.timer_callback)  # Runs at 20Hz. Can be changed.
-
-    def sub_optitrack_callback(self, msg:PoseStamped):
-        '''This callback will run everytime the rclpy executor spins'''
-        x, y = msg.pose.position.x, msg.pose.position.y
-        rpy_euler = euler_from_quaternion([msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
-        heading = np.rad2deg(rpy_euler[2])
-        self.pose = [x,y,heading]
-
-    def timer_callback(self):
-        """Controller loop"""
-
-        if self.pose is None:
-            return # Does not run if no pose received
-        print(self.pose)
 
 
 
@@ -333,7 +317,10 @@ def draw_map(grid:Grid):
     # image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
     reversed_grid = np.flip(grid.grid, axis=1)[::-1]
     image_grid = np.stack((reversed_grid,)*3, axis=2)
-    print(image_grid.shape, grid.grid.shape)
+    print(image_grid.dtype)
+    image_grid = np.abs(image_grid - np.ones(image_grid.shape, dtype=np.int8)*99)
+    # print(image_grid)
+    # print(image_grid.shape, grid.grid.shape)
     img = Image.fromarray(image_grid, 'RGB')
 
     # Resize image
@@ -444,81 +431,65 @@ def main(args=None):
     print("Starting path planning")
     rclpy.init(args=args)
 
-    mapper = MapNode()
-    # # opti = OptitrackNode()
-    # # odom = OdomNode()
+    # mapper = MapNode()
     waypoint = WaypointNode()
 
-    rclpy.spin_once(mapper)
-    while waypoint.pose is None:
-        rclpy.spin_once(waypoint)
-    # map = np.load('/home/marmot/Documents/rb2301/map.npy')
-    
+    # rclpy.spin_once(mapper)
+    # while waypoint.pose is None:
+    #     rclpy.spin_once(waypoint)
+    map = np.load('/home/marmot/Documents/rb2301/ca2_sim_map.npy')
+ 
+    # x_size, y_size, x_start, y_start, resolution = mapper.details
+    x_start, y_start, resolution = 35, 30, 3
+    # print(x_start, y_start, resolution)
+    # print(map)
+    # map[0,5:8] = 99
+    # map[2,-4] = 99
+    # map[:,4] = 99
+    # map[18:22,-9] = 99
 
-    start, goal = (6,5), (22,30)
-    start, goal = (6,5), (31,40)
-    # start, goal = (-5, -5), (-2,-2)
-    # start, goal = (4,8), (4,5) 
-    # np.save('map.npy', mapper.map)
-    # print(mapper.details)
-    x_size, y_size, x_start, y_start, resolution = mapper.details
-    x_bounds = (x_start, x_start+x_size*resolution)
-    y_bounds = (y_start, y_start+y_size*resolution)
-    # print(x_bounds, y_bounds)
+    # np.save('/home/marmot/Documents/rb2301/ca2_sim_map.npy', map)
 
-
-    # start_coords = (0, 0)
-    start_coords = waypoint.pose[:2]
+    # start_coords = waypoint.pose[:2]
+    start_coords = (0, 0)
     goal_coords = (3.4, -3)
     goal_coords = (0.0, -3)
 
-
     start = (int(start_coords[0]//resolution - x_start//resolution), int(start_coords[1]//resolution - y_start//resolution))
     goal = (int(goal_coords[0]//resolution - x_start//resolution), int(goal_coords[1]//resolution - y_start//resolution))
-    # print(start,goal)
 
-    # start, goal = (12,18), (60,45)
-
-    grid = Grid(mapper.map, starting_position=start, goal_position=goal)
-    mapper.destroy_node()
-    
-    print(grid.grid.shape, grid.grid[start], grid.grid[goal])
-
-    if grid.check_grid_validity():
-        print("Map start and goal valid")
-    else:
-        print("Invalid start and/or goal")
-
-    solution = a_star_search(grid)
-    print(f"Full solution: {solution}")
-    waypoints = convert_path_to_waypoints(solution)
-    print(f"Full solution: {waypoints}")
-    coordinate_waypoints = []
-    for point in waypoints:
-        coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
-    
-    rounded_waypoints = []
-    for point in coordinate_waypoints:
-        rounded_waypoints.append((round(point[0], 1), round(point[1], 1)))
-    print(rounded_waypoints)
-
+    # np.save('/home/marmot/Documents/rb2301/ca2_sim_map.npy', mapper.map)
+    grid = Grid(map, starting_position=start, goal_position=goal)
     draw_map(grid)
-    draw_path(grid, solution, waypoints)
-    # 
+    # mapper.destroy_node()
+    
+    # if grid.check_grid_validity():
+    #     print("Map start and goal valid")
+    # else:
+    #     print("Invalid start and/or goal")
+
+    # solution = a_star_search(grid)
+    # print(f"Full solution: {solution}")
+    # waypoints = convert_path_to_waypoints(solution)
+    # print(f"Full solution: {waypoints}")
+    # coordinate_waypoints = []
+    # for point in waypoints:
+    #     coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
+    
+    # rounded_waypoints = []
+    # for point in coordinate_waypoints:
+    #     rounded_waypoints.append((round(point[0], 1), round(point[1], 1)))
+    # print(rounded_waypoints)
+
+    
+    # draw_path(grid, solution, waypoints)
 
     # waypoint.set_waypoints(rounded_waypoints)
     # rclpy.spin(waypoint)
-    
     
     rclpy.shutdown()
 
 
 if __name__ == '__main__':
-    # grid = Grid(generate_grid_size=(8,8), num_obstacles=round(8*8*0.75))
-    # res = a_star_search(grid)
-    # print(grid.grid, "\n", res)
-    # draw_path(grid, res)
     main()
-    # arr = np.load('/home/marmot/Downloads/rb2301_nav/map.npy')
-    # print(arr, arr.max(), arr.min())
 
