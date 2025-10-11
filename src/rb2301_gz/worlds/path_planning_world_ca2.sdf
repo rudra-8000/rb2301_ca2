@@ -348,7 +348,7 @@
       <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/litterbin/2</uri>
       <name>bin</name>
       <pose>0.85 -3.4 0.0 0 0 1.57079633</pose>
-    </include>  -->
+    </include>  
 
     <!-- Add stuff here-->
 

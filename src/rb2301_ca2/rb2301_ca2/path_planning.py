@@ -2,8 +2,8 @@ import numpy as np
 import heapq
 import rclpy
 from rclpy.node import Node
-# from std_msgs.msg import String
-# from sensor_msgs.msg import LaserScan
+from rclpy.logging import set_logger_level, LoggingSeverity
+
 from nav_msgs.msg import OccupancyGrid
 from rclpy.qos import (
     ReliabilityPolicy,
@@ -13,7 +13,6 @@ from rclpy.qos import (
 )
 from geometry_msgs.msg import PoseStamped
 from tf_transformations import euler_from_quaternion
-# from tf2_msgs.msg import TFMessage
 from nav_msgs.msg import Odometry
 from PIL import Image
 from geometry_msgs.msg import Twist
@@ -23,11 +22,13 @@ np.set_printoptions(
     2, suppress=True, threshold=np.inf
 )  # Print numpy arrays to specified d.p., suppress scientific notation (e.g. 1e-5), and do not truncate
 
+set_logger_level("path_planning", level=LoggingSeverity.INFO) # Configure to either LoggingSeverity.INFO or LoggingSeverity.DEBUG  
+
 max_translate_velocity = 1.0
 
 is_simulation = True
 
-goal_list = [(3.4, -3.6), (3, 0.2), (2.6, -3.6), (-0.4, -3.8)]
+goal_list = [(3.4, -3.6), (3.2, 0.2), (2.4, -3.6), (-0.4, -3.8)]
 
 
 class WaypointNode(Node):
@@ -106,7 +107,7 @@ class WaypointNode(Node):
         """Controller loop"""
         if self.pose is None:
             return # Does not run if no pose received from Odom or Optitrack
-        # print(f"pose: {self.pose}")
+        self.get_logger().debug(f"pose: {self.pose}")
 
         if self.goal_reached:
             if self.current_goal_idx >= len(self.goal_list):
@@ -123,7 +124,7 @@ class WaypointNode(Node):
             grid = Grid(self.map_array, starting_position=start, goal_position=goal)
             
             if not grid.check_grid_validity():
-                print("Invalid start and/or goal")
+                self.get_logger().warn("Invalid start and/or goal")
 
             solution_path = a_star_search(grid)
             waypoint_list = convert_path_to_waypoints(solution_path)
@@ -143,17 +144,17 @@ class WaypointNode(Node):
 
             else:
                 target_waypoint = np.array(self.waypoints[self.current_waypoint_idx])
-                print(f"Target: {target_waypoint}")
+                self.get_logger().debug(f"Target: {target_waypoint}")
                 if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.05:
                     
                     self.move_2D()
                     if self.current_waypoint_idx+1 != len(self.waypoints):
-                        print(f"Waypoint {target_waypoint} reached. Next target is {self.waypoints[self.current_waypoint_idx+1]}")
+                        self.get_logger().info(f"Waypoint {target_waypoint} reached. Next target is {self.waypoints[self.current_waypoint_idx+1]}")
                     self.current_waypoint_idx += 1
                 else:
                     x = target_waypoint[0] - self.pose[0]
                     y = target_waypoint[1] - self.pose[1]
-                    # print(f"Move: {x, y}")
+
                     if 0.0 < x < 0.15:
                         x = 0.15
                     elif -0.15 < x < 0.0:
@@ -162,44 +163,8 @@ class WaypointNode(Node):
                         y = 0.15
                     elif -0.15 < y < 0.0:
                         y = -0.15
-                    # print(f"Move: {x, y}")
+
                     self.move_2D(x, y)
-
-
-
-class MapNode(Node):
-    '''ROS2 node to read map data published by the mapper'''
-    def __init__(self):
-        super().__init__('MapNode')
-
-        # Subscribe to the scan ROS topic, which is what the lidar (whether simulated or real) publishes to
-        qos_profile = QoSProfile(
-            # history=HistoryPolicy.KEEP_LAST,
-            depth=2,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL, # Need to use this setting since the publishing map node uses transient local
-            # reliability=ReliabilityPolicy.RELIABLE
-        )
-        self.map_sub = self.create_subscription( 
-            OccupancyGrid,
-            # 'map',
-            'global_costmap',
-            self.map_sub_callback, 
-            qos_profile
-            )
-
-        self.map = None
-        self.details = None
-        
-
-    def map_sub_callback(self, msg):
-        '''This callback will run everytime the rclpy executor spins'''
-        # print(msg.info, type(msg.data), '\n')
-        x_size, y_size, resolution, x_start, y_start = msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y
-        self.details = (x_size, y_size, x_start, y_start, resolution)
-        '''(x_size, y_size, x_start, y_start, resolution)'''
-        self.map = np.array(msg.data) 
-        self.map = np.resize(self.map, (y_size, x_size)).transpose() # Resize map to given dimensions, then transpose so x is row and y is column
-        # x_size, y_size, x_start, y_start, resolution = self.details
 
 
 class Grid():
@@ -322,7 +287,6 @@ def draw_grid_map(grid:Grid, waypoints:list=(), path:list=(), obstacle_threshold
 
     img.show()
 
-
             
 class Cell:
     def __init__(self, parent_coords:tuple=(0,0)):
@@ -359,8 +323,6 @@ def get_valid_actions(grid:Grid, coordinates:tuple, obstacle_threshold:float):
     # if x < grid.shape[0]-1 and y < grid.shape[1]-1 and grid.grid[x+1, y+1] <= 0: # Cell top right
     #     valid_actions.append((1, 1)) 
 
-    # print(grid.grid)
-    # print(grid.grid[x-1:x+2, y-1:y+2])
     return valid_actions
 
 def a_star_search(grid:Grid, obstacle_threshold:float=50):
@@ -414,13 +376,9 @@ def main(args=None):
     print("Starting path planning")
     rclpy.init(args=args)
 
-    map_array = np.load('/home/marmot/Documents/rb2301/ca2_sim_map.npy')
-    map_array[8:11, 7:11] = 99
-    map_array[10, 15:17] = 99
-    map_array[15, 21:25] = 99
-    np.save('/home/marmot/Documents/rb2301/ca2_sim_map.npy', map_array)
-    grid = Grid(map_array)
-    draw_grid_map(grid)
+    import os
+    filepath = os.path.dirname(os.path.realpath(__file__))
+    map_array = np.load(filepath + '/ca2_sim_map.npy')
     
     waypoint = WaypointNode(map_array, goal_list)
     while waypoint.pose is None:
