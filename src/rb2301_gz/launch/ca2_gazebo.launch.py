@@ -131,6 +131,15 @@ def generate_launch_description():
     )
     ld.add_action(gz_bridge_node)
 
+    # # rviz
+    # node_rviz = Node(
+    #     package='rviz2',
+    #     executable='rviz2',
+    #     arguments=['-d', PathJoinSubstitution([pkg_rb2301_gz, 'rviz', 'ca2.rviz']),],
+    #     output='screen'
+    # )
+    # ld.add_action(node_rviz)
+
     return ld
 
 

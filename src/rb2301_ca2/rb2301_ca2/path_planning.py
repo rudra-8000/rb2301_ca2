@@ -23,10 +23,11 @@ np.set_printoptions(
     2, suppress=True, threshold=np.inf
 )  # Print numpy arrays to specified d.p., suppress scientific notation (e.g. 1e-5), and do not truncate
 
+max_translate_velocity = 1.0
 
 class WaypointNode(Node):
     '''Node to move robot to received waypoints, using pose info from gazebo/optitrack to assist in movement'''
-    def __init__(self, waypoints:list, sim:bool=True):
+    def __init__(self, sim:bool=True):
         super().__init__('waypoint')
         self.get_logger().info("Starting WaypointNode")
 
@@ -39,13 +40,16 @@ class WaypointNode(Node):
         self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10) # Publish to cmd_vel node       
         self.timer = self.create_timer(1, self.timer_callback)  # Runs at 20Hz. Can be changed.
         
-        self.waypoints = waypoints
+        self.waypoints = None
         self.current_waypoint_idx = 0
         self.pose = None
 
 
     def move_2D(self, x:float=0.0, y:float=0.0, turn:float=0.0):
         twist_msg = Twist()
+        x = np.clip(x, -max_translate_velocity, max_translate_velocity)
+        y = np.clip(y, -max_translate_velocity, max_translate_velocity)
+        turn = np.clip(turn, -max_translate_velocity*2, max_translate_velocity*2)
         twist_msg.linear.x, twist_msg.linear.y, twist_msg.linear.z = float(x), float(y), 0.0
         twist_msg.angular.x, twist_msg.angular.y, twist_msg.angular.z = 0.0, 0.0, float(turn)
         self.publisher_.publish(twist_msg)
@@ -60,19 +64,29 @@ class WaypointNode(Node):
         return self.pose
     
 
+    def set_waypoints(self, waypoints:list):
+        self.waypoints = waypoints
+        self.current_waypoint_idx = 0
+
+
     def timer_callback(self):
         """Controller loop"""
-        if self.pose is None:
+        if self.pose is None or self.waypoints is None:
             return # Does not run if no pose received
-        print(self.pose)
+        
         
         if self.current_waypoint_idx == len(self.waypoints):
             self.get_logger().info("Destination reached, shutting down!")
-            self.destroy_node()
-            rclpy.shutdown()
+            self.waypoints = None
+
         else:
             target_waypoint = np.array(self.waypoints[self.current_waypoint_idx])
-            if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.1:
+            print(self.pose, target_waypoint)
+            
+            if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.2:
+                self.move_2D()
+                if self.current_waypoint_idx+1 != len(self.waypoints):
+                    print(f"Waypoint {target_waypoint} reached. Next target is {self.waypoints[self.current_waypoint_idx+1]}")
                 self.current_waypoint_idx += 1
             else:
                 x = target_waypoint[0] - self.pose[0]
@@ -116,7 +130,7 @@ class OptitrackNode(Node):
 
         if self.pose is None:
             return # Does not run if no pose received
-        print(self.pose )
+        print(self.pose)
 
 
 
@@ -134,25 +148,25 @@ class MapNode(Node):
         )
         self.map_sub = self.create_subscription( 
             OccupancyGrid,
-            'map',
-            # 'global_costmap',
+            # 'map',
+            'global_costmap',
             self.map_sub_callback, 
             qos_profile
             )
         
         self.map = None
+        self.details = None
 
     def map_sub_callback(self, msg):
         '''This callback will run everytime the rclpy executor spins'''
         # print(msg.info, type(msg.data), '\n')
-        x_size, y_size, resolution = msg.info.width, msg.info.height, msg.info.resolution
+        x_size, y_size, resolution, x_start, y_start = msg.info.width, msg.info.height, msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y
+        self.details = (x_size, y_size, x_start, y_start, resolution)
+        '''(x_size, y_size, x_start, y_start, resolution)'''
         self.map = np.array(msg.data) 
-        self.map = np.resize(self.map, (y_size, x_size))[::-1].transpose() # Resize map to given dimensions, then transpose so x is row and y is column
-        self.map[self.map <= 50] = 0
-        self.map[self.map > 50] = 1
-        
-        print(self.map)
-        print(self.map.shape)
+        self.map = np.resize(self.map, (y_size, x_size)).transpose() # Resize map to given dimensions, then transpose so x is row and y is column
+        # self.map[self.map <= 50] = 0
+        # self.map[self.map > 50] = 1
 
 
 class Grid():
@@ -286,21 +300,22 @@ def convert_path_to_waypoints(path:list):
         if move_direction(path[idx-1], path[idx]) != move_direction(path[idx], path[idx+1]):
             waypoints.append(path[idx])
     waypoints.append(path[-1])
+
     return waypoints
 
 
-def draw_path(grid:Grid, path:list, waypoints:list):
+def draw_path(grid:Grid, path:list, waypoints:list, obstacle_threshold:float=50):
     '''Creates an image of the maze and path taken. 
     Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
     image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
-    image_grid[grid.grid == 0] = (255,255,255)
-    image_grid[grid.grid == 1] = (0,0,255)
+    image_grid[grid.grid <= obstacle_threshold] = (255,255,255)
+    image_grid[grid.grid > obstacle_threshold] = (0,0,255)
     for x, y in path:
         image_grid[x][y] = (0,255,0)
 
     for point in waypoints:
         image_grid[point] = (255,0,0)
-    image_grid = image_grid[::-1]
+    image_grid = np.flip(image_grid, axis=1)[::-1]
     img = Image.fromarray(image_grid, 'RGB')
 
     # Resize image
@@ -310,7 +325,25 @@ def draw_path(grid:Grid, path:list, waypoints:list):
     img = img.resize((base_width, hsize), Image.Resampling.NEAREST)
 
     img.show()
-            
+
+
+def draw_map(grid:Grid):
+    '''Creates an image of the maze and path taken. 
+    Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
+    # image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
+    reversed_grid = np.flip(grid.grid, axis=1)[::-1]
+    image_grid = np.stack((reversed_grid,)*3, axis=2)
+    print(image_grid.shape, grid.grid.shape)
+    img = Image.fromarray(image_grid, 'RGB')
+
+    # Resize image
+    base_width = 500
+    wpercent = (base_width / float(img.size[0]))
+    hsize = int((float(img.size[1]) * float(wpercent)))
+    img = img.resize((base_width, hsize), Image.Resampling.NEAREST)
+
+    img.show()
+
             
 class Cell:
     def __init__(self, parent_coords:tuple=(0,0)):
@@ -319,26 +352,39 @@ class Cell:
         self.g = np.inf # Cost from start position
         self.h = 0 # Heuristic cost to destination (reward) cell
 
-def get_valid_actions(grid:Grid, coordinates:tuple):
+def get_valid_actions(grid:Grid, coordinates:tuple, obstacle_threshold:float):
     # Returns list of valid actions based on grid position. Currently set to only allow 4 cardinal direction movement
     x, y = coordinates
     valid_actions = []
-    if x > 0 and grid.grid[x-1, y] <= 0: # Cell below
+    if x > 0 and grid.grid[x-1, y] <= obstacle_threshold: # Cell below
         valid_actions.append((-1, 0)) 
 
-    if x < grid.shape[0]-1 and grid.grid[x+1, y] <= 0: # Cell above
+    if x < grid.shape[0]-1 and grid.grid[x+1, y] <= obstacle_threshold: # Cell above
         valid_actions.append((1, 0))
 
-    if y > 0 and grid.grid[x, y-1] <= 0: # Cell left
+    if y > 0 and grid.grid[x, y-1] <= obstacle_threshold: # Cell left
         valid_actions.append((0, -1))
 
-    if y < grid.shape[1]-1 and grid.grid[x, y+1] <= 0: # Cell right
+    if y < grid.shape[1]-1 and grid.grid[x, y+1] <= obstacle_threshold: # Cell right
         valid_actions.append((0, 1))
+
+    # if x > 0 and y > 0 and grid.grid[x-1, y-1] <= 0: # Cell bottom left
+    #     valid_actions.append((-1, -1)) 
+
+    # if x > 0 and y < grid.shape[1]-1 and grid.grid[x-1, y+1] <= 0: # Cell bottom right
+    #     valid_actions.append((-1, 1)) 
+
+    # if x < grid.shape[0]-1 and y > 0 and grid.grid[x+1, y-1] <= 0: # Cell top left
+    #     valid_actions.append((1, -1)) 
+
+    # if x < grid.shape[0]-1 and y < grid.shape[1]-1 and grid.grid[x+1, y+1] <= 0: # Cell top right
+    #     valid_actions.append((1, 1)) 
+
     # print(grid.grid)
     # print(grid.grid[x-1:x+2, y-1:y+2])
     return valid_actions
 
-def a_star_search(grid:Grid):
+def a_star_search(grid:Grid, obstacle_threshold:float=30):
     cells_to_visit = []
     visited_cells = np.zeros(grid.shape)
     cell_details = [[Cell() for _ in range(grid.shape[1])] for _ in range(grid.shape[0])]
@@ -348,7 +394,6 @@ def a_star_search(grid:Grid):
     starting_cell.parent_coords = grid.starting_position
 
     heapq.heappush(cells_to_visit, (0.0, grid.starting_position[0],  grid.starting_position[1]))
-    print(cells_to_visit)
     print("Start A* search")
     while cells_to_visit:
         
@@ -361,12 +406,12 @@ def a_star_search(grid:Grid):
 
         # valid_action_indices = np.flatnonzero(~np.isnan(grid.q_table[x, y]))
         # valid_actions = [action_list[i] for i in valid_action_indices]
-        valid_actions = get_valid_actions(grid, (x,y))
+        valid_actions = get_valid_actions(grid, (x,y), obstacle_threshold)
         # print(len(cells_to_visit))
         for action in valid_actions:
             neighbour_cell_x = x + action[0]
             neighbour_cell_y = y + action[1]
-            if visited_cells[neighbour_cell_x][neighbour_cell_y] != 1 and grid.grid[neighbour_cell_x, neighbour_cell_y] <= 0: 
+            if visited_cells[neighbour_cell_x][neighbour_cell_y] != 1 and grid.grid[neighbour_cell_x, neighbour_cell_y] <= obstacle_threshold: 
             # If neighbour cell not visited before and not a obstacle
                 
                 if (neighbour_cell_x, neighbour_cell_y) == grid.goal_position:
@@ -390,7 +435,6 @@ def a_star_search(grid:Grid):
                         cell_details[neighbour_cell_x][neighbour_cell_y].h = neighbour_h
                         cell_details[neighbour_cell_x][neighbour_cell_y].parent_coords = (x, y)
     
-    print(np.flatnonzero(visited_cells).shape)
     # If the while loop is finished entirely, it means the destination tile was not found but all possible tiles have been explored
     print("Failed to find path")
     return None
@@ -398,44 +442,75 @@ def a_star_search(grid:Grid):
 
 def main(args=None):
     print("Starting path planning")
-    # rclpy.init(args=args)
+    rclpy.init(args=args)
 
-    # mapper = MapNode()
+    mapper = MapNode()
     # # opti = OptitrackNode()
     # # odom = OdomNode()
+    waypoint = WaypointNode()
 
-    # rclpy.spin_once(mapper)
-    map = np.load('/home/marmot/Documents/rb2301/map.npy')
-    resolution, x_start, y_start = 0.15, -0.15, -4.2
+    rclpy.spin_once(mapper)
+    while waypoint.pose is None:
+        rclpy.spin_once(waypoint)
+    # map = np.load('/home/marmot/Documents/rb2301/map.npy')
+    
 
-    start, goal = (6,5), (28,7)
+    start, goal = (6,5), (22,30)
+    start, goal = (6,5), (31,40)
     # start, goal = (-5, -5), (-2,-2)
     # start, goal = (4,8), (4,5) 
     # np.save('map.npy', mapper.map)
-    grid = Grid(map, starting_position=start, goal_position=goal)
-    # 
+    # print(mapper.details)
+    x_size, y_size, x_start, y_start, resolution = mapper.details
+    x_bounds = (x_start, x_start+x_size*resolution)
+    y_bounds = (y_start, y_start+y_size*resolution)
+    # print(x_bounds, y_bounds)
+
+
+    # start_coords = (0, 0)
+    start_coords = waypoint.pose[:2]
+    goal_coords = (3.4, -3)
+    goal_coords = (0.0, -3)
+
+
+    start = (int(start_coords[0]//resolution - x_start//resolution), int(start_coords[1]//resolution - y_start//resolution))
+    goal = (int(goal_coords[0]//resolution - x_start//resolution), int(goal_coords[1]//resolution - y_start//resolution))
+    # print(start,goal)
+
+    # start, goal = (12,18), (60,45)
+
+    grid = Grid(mapper.map, starting_position=start, goal_position=goal)
+    mapper.destroy_node()
+    
     print(grid.grid.shape, grid.grid[start], grid.grid[goal])
 
     if grid.check_grid_validity():
         print("Map start and goal valid")
     else:
-        print("Invalid start and goal")
+        print("Invalid start and/or goal")
+
     solution = a_star_search(grid)
-    print(f"Solution: {solution}")
+    print(f"Full solution: {solution}")
     waypoints = convert_path_to_waypoints(solution)
-    print(waypoints)
+    print(f"Full solution: {waypoints}")
     coordinate_waypoints = []
-    for waypoint in waypoints:
-        coordinate_waypoints.append((waypoint[0]*resolution+x_start, waypoint[1]*resolution+y_start))
+    for point in waypoints:
+        coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
     
-    print(coordinate_waypoints)
+    rounded_waypoints = []
+    for point in coordinate_waypoints:
+        rounded_waypoints.append((round(point[0], 1), round(point[1], 1)))
+    print(rounded_waypoints)
 
+    draw_map(grid)
     draw_path(grid, solution, waypoints)
-    # mapper.destroy_node()
+    # 
 
-    # waypoint = WaypointNode(waypoints)
+    # waypoint.set_waypoints(rounded_waypoints)
     # rclpy.spin(waypoint)
-    # rclpy.shutdown()
+    
+    
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':

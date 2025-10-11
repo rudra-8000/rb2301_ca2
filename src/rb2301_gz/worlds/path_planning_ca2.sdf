@@ -263,7 +263,7 @@
     <include>
       <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
       <name>wall_19</name>
-      <pose>3.6 -2.4 -0.2 0 0 0</pose>
+      <pose>3.4 -2.4 -0.2 0 0 0</pose>
     </include> 
 
     <include>

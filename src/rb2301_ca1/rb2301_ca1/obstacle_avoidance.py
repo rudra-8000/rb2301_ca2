@@ -17,7 +17,7 @@ class ObstacleAvoidanceNode(Node):
     def __init__(self):
         """Node constructor"""
         super().__init__("obstacle_avoidance")
-        self.get_logger().info("Starting Obstacle Avoidance")
+        self.get_logger().info("Starting min scan")
 
         self.pub_cmd_vel = self.create_publisher(Twist, "cmd_vel", 10)  # Publish to cmd_vel node
         self.sub_scan = self.create_subscription(LaserScan, "scan", self.sub_scan_callback, 2) # The subscriber to the Lidar ranges.
@@ -28,22 +28,16 @@ class ObstacleAvoidanceNode(Node):
     def move_2D(self, x: float = 0.0, y: float = 0.0, turn: float = 0.0):
         """Publishes a twist command to move in 2D space. +ve x is forwards, +ve y is left, and +ve turn is anticlockwise"""
         twist_msg = Twist()
-        # Please keep the max velocity caps to protect the irl robots
-        twist_msg.linear.x, twist_msg.linear.y, twist_msg.linear.z = (
-            min(float(x), max_translate_velocity),
-            min(float(y), max_translate_velocity),
-            0.0,
-        )
-        twist_msg.angular.x, twist_msg.angular.y, twist_msg.angular.z = (
-            0.0,
-            0.0,
-            min(float(turn), max_turn_velocity),
-        )
+        x = np.clip(x, -max_translate_velocity, max_translate_velocity)
+        y = np.clip(y, -max_translate_velocity, max_translate_velocity)
+        turn = np.clip(turn, -max_translate_velocity*2, max_translate_velocity*2)
+        twist_msg.linear.x, twist_msg.linear.y, twist_msg.linear.z = float(x), float(y), 0.0
+        twist_msg.angular.x, twist_msg.angular.y, twist_msg.angular.z = 0.0, 0.0, float(turn)
         self.pub_cmd_vel.publish(twist_msg)
 
     def sub_scan_callback(self, msg):
         """Scan subscriber"""
-        self.last_scan = np.array(msg.ranges)[::20] # Slices the 721 scan array to return only 36 scans. Feel free to edit
+        self.last_scan = np.min(np.array(msg.ranges)) # Slices the 721 scan array to return only 36 scans. Feel free to edit
 
     def timer_callback(self):
         """Controller loop"""
@@ -52,7 +46,8 @@ class ObstacleAvoidanceNode(Node):
             return # Does not run if the laser message is not received.
         
         ######################## MODIFY CODE HERE ########################
-        self.get_logger().debug(str(self.last_scan))
+        print(self.last_scan)
+        # self.move_2D(0.2, 0.0, 0.0)
 
         ######################## MODIFY CODE HERE ########################
 
