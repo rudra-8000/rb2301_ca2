@@ -27,9 +27,11 @@ max_translate_velocity = 1.0
 
 is_simulation = True
 
+goal_list = [()]
+
 class WaypointNode(Node):
     '''Node to move robot to received waypoints, using pose info from either gazebo odometer or optitrack'''
-    def __init__(self, sim:bool=True):
+    def __init__(self, goal_list:list, sim:bool=True):
         super().__init__('waypoint')
         self.get_logger().info("Starting WaypointNode")
 
@@ -137,9 +139,10 @@ class MapNode(Node):
             self.map_sub_callback, 
             qos_profile
             )
-        
+
         self.map = None
         self.details = None
+        
 
     def map_sub_callback(self, msg):
         '''This callback will run everytime the rclpy executor spins'''
@@ -149,8 +152,7 @@ class MapNode(Node):
         '''(x_size, y_size, x_start, y_start, resolution)'''
         self.map = np.array(msg.data) 
         self.map = np.resize(self.map, (y_size, x_size)).transpose() # Resize map to given dimensions, then transpose so x is row and y is column
-        # self.map[self.map <= 50] = 0
-        # self.map[self.map > 50] = 1
+        # x_size, y_size, x_start, y_start, resolution = self.details
 
 
 class Grid():
@@ -288,17 +290,19 @@ def convert_path_to_waypoints(path:list):
     return waypoints
 
 
-def draw_path(grid:Grid, path:list, waypoints:list, obstacle_threshold:float=50):
+def draw_path(grid:Grid, waypoints:list=(), path:list=(), obstacle_threshold:float=50):
     '''Creates an image of the maze and path taken. 
     Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
     image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
     image_grid[grid.grid <= obstacle_threshold] = (255,255,255)
     image_grid[grid.grid > obstacle_threshold] = (0,0,255)
+
     for x, y in path:
         image_grid[x][y] = (0,255,0)
 
     for point in waypoints:
         image_grid[point] = (255,0,0)
+
     image_grid = np.flip(image_grid, axis=1)[::-1]
     img = Image.fromarray(image_grid, 'RGB')
 
@@ -312,13 +316,13 @@ def draw_path(grid:Grid, path:list, waypoints:list, obstacle_threshold:float=50)
 
 
 def draw_map(grid:Grid):
-    '''Creates an image of the maze and path taken. 
+    '''Creates a greyscale of the maze and path taken. 
     Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
-    # image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
     reversed_grid = np.flip(grid.grid, axis=1)[::-1]
-    image_grid = np.stack((reversed_grid,)*3, axis=2)
-    print(image_grid.dtype)
-    image_grid = np.abs(image_grid - np.ones(image_grid.shape, dtype=np.int8)*99)
+    # image_grid = np.stack((reversed_grid,)*3, axis=2)
+    # image_grid = np.abs(image_grid - np.ones(image_grid.shape, dtype=np.int8)*99)
+    image_grid = np.ones((reversed_grid.shape[0],reversed_grid.shape[1],3), dtype=np.int8)
+
     # print(image_grid)
     # print(image_grid.shape, grid.grid.shape)
     img = Image.fromarray(image_grid, 'RGB')
@@ -371,7 +375,7 @@ def get_valid_actions(grid:Grid, coordinates:tuple, obstacle_threshold:float):
     # print(grid.grid[x-1:x+2, y-1:y+2])
     return valid_actions
 
-def a_star_search(grid:Grid, obstacle_threshold:float=30):
+def a_star_search(grid:Grid, obstacle_threshold:float=50):
     cells_to_visit = []
     visited_cells = np.zeros(grid.shape)
     cell_details = [[Cell() for _ in range(grid.shape[1])] for _ in range(grid.shape[0])]
@@ -431,55 +435,54 @@ def main(args=None):
     print("Starting path planning")
     rclpy.init(args=args)
 
+
+    map = np.load('/home/marmot/Documents/rb2301/ca2_sim_map.npy')
+
     # mapper = MapNode()
-    waypoint = WaypointNode()
 
     # rclpy.spin_once(mapper)
+    # print(mapper.details)
+    # mapper.destroy_node()
+    
+
+    x_start, y_start, resolution = -1.0, -5.0, .2
+
+    # waypoint = WaypointNode(goal_list)
     # while waypoint.pose is None:
     #     rclpy.spin_once(waypoint)
-    map = np.load('/home/marmot/Documents/rb2301/ca2_sim_map.npy')
- 
-    # x_size, y_size, x_start, y_start, resolution = mapper.details
-    x_start, y_start, resolution = 35, 30, 3
-    # print(x_start, y_start, resolution)
-    # print(map)
-    # map[0,5:8] = 99
-    # map[2,-4] = 99
-    # map[:,4] = 99
-    # map[18:22,-9] = 99
-
-    # np.save('/home/marmot/Documents/rb2301/ca2_sim_map.npy', map)
-
     # start_coords = waypoint.pose[:2]
     start_coords = (0, 0)
     goal_coords = (3.4, -3)
-    goal_coords = (0.0, -3)
+    goal_coords = (3.4, -3.6)
+    # goal_coords = (3, 0.2)
+    goal_coords = (2.0, -3.6)
+    goal_coords = (-0.4, -3.8)
 
     start = (int(start_coords[0]//resolution - x_start//resolution), int(start_coords[1]//resolution - y_start//resolution))
     goal = (int(goal_coords[0]//resolution - x_start//resolution), int(goal_coords[1]//resolution - y_start//resolution))
 
+    print(start, goal)
     # np.save('/home/marmot/Documents/rb2301/ca2_sim_map.npy', mapper.map)
     grid = Grid(map, starting_position=start, goal_position=goal)
-    draw_map(grid)
-    # mapper.destroy_node()
+    draw_path(grid, waypoints=(start, goal))
     
-    # if grid.check_grid_validity():
-    #     print("Map start and goal valid")
-    # else:
-    #     print("Invalid start and/or goal")
+    if grid.check_grid_validity():
+        print("Map start and goal valid")
+    else:
+        print("Invalid start and/or goal")
 
-    # solution = a_star_search(grid)
-    # print(f"Full solution: {solution}")
-    # waypoints = convert_path_to_waypoints(solution)
-    # print(f"Full solution: {waypoints}")
-    # coordinate_waypoints = []
-    # for point in waypoints:
-    #     coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
+    solution = a_star_search(grid)
+    print(f"Full solution: {solution}")
+    waypoints = convert_path_to_waypoints(solution)
+    print(f"Full solution: {waypoints}")
+    coordinate_waypoints = []
+    for point in waypoints:
+        coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
     
-    # rounded_waypoints = []
-    # for point in coordinate_waypoints:
-    #     rounded_waypoints.append((round(point[0], 1), round(point[1], 1)))
-    # print(rounded_waypoints)
+    rounded_waypoints = []
+    for point in coordinate_waypoints:
+        rounded_waypoints.append((round(point[0], 1), round(point[1], 1)))
+    print(rounded_waypoints)
 
     
     # draw_path(grid, solution, waypoints)
