@@ -128,7 +128,7 @@ class WaypointNode(Node):
 
             solution_path = a_star_search(grid)
             waypoint_list = convert_path_to_waypoints(solution_path)
-            draw_grid_map(grid, waypoint_list, solution_path)
+            grid.draw_grid_map(waypoint_list, solution_path)
 
             coordinate_waypoints = []
             for point in waypoint_list:
@@ -171,10 +171,8 @@ class Grid():
     '''
     Atributes:
     grid_array : numpy array representing the occupancy grid
-    generate_grid_size : tuple to represent occupancy grid to generate, if grid_array not given
-    num_obstacles : number of obstacles to place within generated_grid, if grid_array not given. Optional; if none given, defaults to having 25% of cells be obstacles
-    starting_position : tuple of starting coordinates / indices within the grid
-    goal_position : tuple of goal coordinates / indices within the grid. If negative indices given, will count backwards 
+    starting_position : tuple of starting indices within the grid
+    goal_position : tuple of goal indices within the grid. Works with negative indices as well
     '''
     def __init__(self, grid_array:np.array=np.array([]), starting_position:tuple=(0,0), goal_position:tuple=(-1,-1)):
 
@@ -229,7 +227,32 @@ class Grid():
             return True
         else:
             return False
-        
+
+    def draw_grid_map(self, waypoints:list=(), path:list=(), obstacle_threshold:float=50):
+        '''Creates an image of the maze and path taken. 
+        Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
+        image_grid = np.ones((self.grid.shape[0],self.grid.shape[1],3), dtype=np.uint8)
+        image_grid[self.grid <= obstacle_threshold] = (255,255,255)
+        image_grid[self.grid > obstacle_threshold] = (0,0,255)
+
+        for x, y in path:
+            image_grid[x][y] = (0,255,0)
+
+        for point in waypoints:
+            image_grid[point] = (255,0,0)
+
+        image_grid = np.flip(image_grid, axis=1)[::-1]
+        img = Image.fromarray(image_grid, 'RGB')
+
+        # Resize image
+        base_width = 500
+        wpercent = (base_width / float(img.size[0]))
+        hsize = int((float(img.size[1]) * float(wpercent)))
+        img = img.resize((base_width, hsize), Image.Resampling.NEAREST)
+
+        img.show()
+
+
 def heuristic_cost(destination:tuple, cell_coordinates):
     # Uses Manhattan distance to calculate heuristic cost from the cell to the destination
     return abs(destination[0]-cell_coordinates[0]) + abs(destination[1]-cell_coordinates[1])
@@ -263,29 +286,6 @@ def convert_path_to_waypoints(path:list):
     return waypoints
 
 
-def draw_grid_map(grid:Grid, waypoints:list=(), path:list=(), obstacle_threshold:float=50):
-    '''Creates an image of the maze and path taken. 
-    Maze walls in blue, empty space in white, path taken in green and waypoints in red'''
-    image_grid = np.ones((grid.grid.shape[0],grid.grid.shape[1],3), dtype=np.uint8)
-    image_grid[grid.grid <= obstacle_threshold] = (255,255,255)
-    image_grid[grid.grid > obstacle_threshold] = (0,0,255)
-
-    for x, y in path:
-        image_grid[x][y] = (0,255,0)
-
-    for point in waypoints:
-        image_grid[point] = (255,0,0)
-
-    image_grid = np.flip(image_grid, axis=1)[::-1]
-    img = Image.fromarray(image_grid, 'RGB')
-
-    # Resize image
-    base_width = 500
-    wpercent = (base_width / float(img.size[0]))
-    hsize = int((float(img.size[1]) * float(wpercent)))
-    img = img.resize((base_width, hsize), Image.Resampling.NEAREST)
-
-    img.show()
 
             
 class Cell:
@@ -373,22 +373,57 @@ def a_star_search(grid:Grid, obstacle_threshold:float=50):
 
 
 def main(args=None):
-    print("Starting path planning")
-    rclpy.init(args=args)
-
     import os
     filepath = os.path.dirname(os.path.realpath(__file__))
     map_array = np.load(filepath + '/ca2_sim_map.npy')
-    
-    waypoint = WaypointNode(map_array, goal_list)
-    while waypoint.pose is None:
-        rclpy.spin_once(waypoint)
+    print(map_array.dtype)
+    irl_map = np.zeros((15,10), dtype=np.int8)
+    irl_map[0,:] = 99
+    irl_map[-1,:] = 99
+    irl_map[:,0] = 99
+    irl_map[:,-1] = 99
+    irl_map[11,8] = 99
+    irl_map[9,6:9] = 99
+    irl_map[13,6] = 99
+    irl_map[10,6] = 99
+    irl_map[12:14,4] = 99
+    irl_map[12,2] = 99
+    irl_map[9,1:5] = 99
+    irl_map[8,4] = 99
+    irl_map[3:7,7] = 99
+    irl_map[6,6] = 99
+    irl_map[3,6] = 99
+    irl_map[2:6,4] = 99
+    irl_map[3,1:4] = 99
+    irl_map[3:6,1:3] = 99
+    irl_map[1,2] = 99
 
-    rclpy.spin(waypoint)
+
+    grid = Grid(irl_map)
+    grid.draw_grid_map()
+    np.save('ca2_irl_map.npy', grid)
+
+    # print("Starting path planning")
+    # rclpy.init(args=args)
+
+    # import os
+    # filepath = os.path.dirname(os.path.realpath(__file__))
+    # if is_simulation:
+    #     map_array = np.load(filepath + '/ca2_sim_map.npy')
+    # else:
+    #     map_array = np.load(filepath + '/ca2_irl_map.npy')
     
-    rclpy.shutdown()
+    # waypoint = WaypointNode(map_array, goal_list)
+    # while waypoint.pose is None:
+    #     rclpy.spin_once(waypoint)
+
+    # rclpy.spin(waypoint)
+    
+    # rclpy.shutdown()
 
 
 if __name__ == '__main__':
     main()
+
+
 

@@ -25,7 +25,7 @@ def modify_sdf_file():
             model_path = workspace_src + 'meshes' + model_path
             element[0].text = model_path
     tree.write(overwrite_file)
-# modify_sdf_file()
+modify_sdf_file()
 
 def generate_launch_description():
     ld = LaunchDescription()
