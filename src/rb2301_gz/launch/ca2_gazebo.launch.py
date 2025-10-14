@@ -7,25 +7,29 @@ from launch_ros.substitutions import FindPackageShare
 from launch.actions import SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution, Command
 
-
-
-def modify_sdf_file():
-    import os
-    import xml.etree.ElementTree as ET
-    workspace_src = os.path.dirname(os.path.realpath(__file__))[:-6]
-    print(workspace_src)
-    overwrite_file =  workspace_src + 'worlds/path_planning_world_ca2.sdf'
-    print("Modifing path_planning world file paths")
-    tree = ET.parse(overwrite_file)
-    root = tree.getroot()
-    world = root[0]
-    for element in reversed(world): # Remove all coke obstacles
-        if element.tag == 'include':
-            model_path = element[0].text.split('openrobotics/models')[1]
-            model_path = workspace_src + 'meshes' + model_path
-            element[0].text = model_path
-    tree.write(overwrite_file)
-modify_sdf_file()
+# def modify_sdf_file():
+#     import os
+#     import xml.etree.ElementTree as ET
+#     workspace_src = os.path.dirname(os.path.realpath(__file__))[:-6]
+#     print(workspace_src)
+#     overwrite_file =  workspace_src + 'worlds/path_planning_world_ca2.sdf'
+#     print("Modifing path_planning world file paths")
+#     tree = ET.parse(overwrite_file)
+#     root = tree.getroot()
+#     world = root[0]
+#     for element in reversed(world): # Remove all coke obstacles
+#         if element.tag == 'include':
+#             if 'marmot' in element[0].text:
+#                 try:
+#                     model_path = element[0].text.split('rb2301_gz/meshes')[1]
+#                     model_path = workspace_src + 'meshes' + model_path
+#                     element[0].text = model_path
+#                 except:
+#                     break
+#             else:
+#                 break
+#     tree.write(overwrite_file)
+# modify_sdf_file() # Only needs to run on the first gz launch, to modify file paths
 
 def generate_launch_description():
     ld = LaunchDescription()
@@ -54,7 +58,6 @@ def generate_launch_description():
     arg_world = DeclareLaunchArgument(
         'world', 
         # default_value='empty.sdf',
-        # default_value='obstacles_world_ca1.sdf', # RB2301 CA1 Obstacles
         default_value='path_planning_world_ca2.sdf', # RB2301 Path-Planning
         description='Name of the Gazebo world file to load'
     )

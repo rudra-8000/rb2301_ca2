@@ -27,7 +27,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/base_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/base_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -38,7 +38,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/base_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -62,7 +62,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/front_left_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/front_left_wheel_link.STL" />
       </geometry>
       <material name="">
         <color rgba="0.109803921568627 0.109803921568627 0.109803921568627 1" />
@@ -73,7 +73,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/front_left_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/front_left_wheel_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -106,7 +106,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/front_right_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/front_right_wheel_link.STL" />
       </geometry>
       <material name="">
         <color rgba="0.109803921568627 0.109803921568627 0.109803921568627 1" />
@@ -117,7 +117,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/front_right_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/front_right_wheel_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -151,7 +151,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/back_left_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/back_left_wheel_link.STL" />
       </geometry>
       <material name="">
         <color rgba="0.109803921568627 0.109803921568627 0.109803921568627 1" />
@@ -162,7 +162,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/back_left_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/back_left_wheel_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -196,7 +196,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/back_right_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/back_right_wheel_link.STL" />
       </geometry>
       <material name="">
         <color rgba="0.109803921568627 0.109803921568627 0.109803921568627 1" />
@@ -207,7 +207,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/back_right_wheel_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/back_right_wheel_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -241,7 +241,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/base_laser_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/base_laser_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -252,7 +252,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/base_laser_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/base_laser_link.STL" />
       </geometry>
     </collision>  
   </link>
@@ -285,7 +285,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/base_camera_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/base_camera_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -296,7 +296,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/base_camera_link.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/base_camera_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -332,7 +332,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/imu.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/imu.STL" />
       </geometry>
       <material name="">
         <color rgba="1 1 1 1" />
@@ -343,7 +343,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://rb2301_description/meshes/nanocar/imu.STL" />
+        <mesh filename="package://rb2301_gz/meshes/nanocar/imu.STL" />
       </geometry>
     </collision>
   </link>

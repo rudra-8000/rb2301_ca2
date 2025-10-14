@@ -147,205 +147,205 @@
 
     
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_0</name>
       <pose>0.0 0.0 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_1</name>
       <pose>0.0 0.0 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_2</name>
       <pose>0.0 -1.2 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_3</name>
       <pose>0.0 -2.4 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_4</name>
       <pose>0.0 -3.6 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_5</name>
       <pose>0.0 -4.8 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_6</name>
       <pose>1.2 0.0 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_7</name>
       <pose>2.4 0.0 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_8</name>
       <pose>3.6 0.0 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_9</name>
       <pose>4.8 0.0 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_10</name>
       <pose>3.2 0.0 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_11</name>
       <pose>6.0 0.0 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_12</name>
       <pose>6.0 -1.2 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_13</name>
       <pose>6.0 -2.4 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_14</name>
       <pose>6.0 -3.6 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_15</name>
       <pose>4.8 -4.8 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_16</name>
       <pose>3.6 -4.8 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_17</name>
       <pose>3.6 -3.6 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_18</name>
       <pose>3.6 -2.4 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_19</name>
       <pose>3.4 -2.4 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_20</name>
       <pose>2.4 -2.4 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_21</name>
       <pose>1.2 -2.4 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_22</name>
       <pose>1.2 -3.6 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_23</name>
       <pose>0.5 -2.4 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_24</name>
       <pose>1.2 -4.8 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_25</name>
       <pose>2.4 -4.8 -0.2 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/drawer/2</uri>
+      <uri>package://rb2301_gz/meshes/drawer/2</uri>
       <name>drawer_1</name>
       <pose>2.8 -0.8 0.0 0 0 0</pose>
     </include> 
 
     <include> 
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/drawer/2</uri>
+      <uri>package://rb2301_gz/meshes/drawer/2</uri>
       <name>drawer_2</name>
       <pose>3.3 -0.8 0.0 0 0 0</pose>
     </include> 
 
     <include> 
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/drawer/2</uri>
+      <uri>package://rb2301_gz/meshes/drawer/2</uri>
       <name>drawer_3</name>
       <pose>-0.4 0.3 0.0 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/desk/2</uri>
+      <uri>package://rb2301_gz/meshes/desk/2</uri>
       <name>desk_1</name>
       <pose>1.6 -0.4 -0.1 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/desk/2</uri>
+      <uri>package://rb2301_gz/meshes/desk/2</uri>
       <name>desk_2</name>
       <pose>0.75 -0.4 -0.1 0 0 1.57079633</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/desk/2</uri>
+      <uri>package://rb2301_gz/meshes/desk/2</uri>
       <name>desk_3</name>
       <pose>4.2 -2.9 -0.1 0 0 0</pose>
     </include> 
 
     <include>
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/desk/2</uri>
+      <uri>package://rb2301_gz/meshes/desk/2</uri>
       <name>desk_4</name>
       <pose>3.8 -0.5 -0.1 0 0 0</pose>
     </include> 
 
-    <include>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes
-      <uri>/home/marmot/Documents/rb2301/src/rb2301_gz/meshes/litterbin/2</uri>
+    <include>package://rb2301_gz/meshes
+      <uri>package://rb2301_gz/meshes/litterbin/2</uri>
       <name>bin</name>
       <pose>0.85 -3.4 0.0 0 0 1.57079633</pose>
     </include>  
