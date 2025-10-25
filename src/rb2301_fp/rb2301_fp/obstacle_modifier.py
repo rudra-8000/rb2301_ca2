@@ -1,7 +1,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 import os
-from shutil import move, copy2
+from shutil import copy2
 
 randomise = True
 
@@ -37,9 +37,9 @@ original_file = workspace_directory + '/rb2301_gz/worlds/obstacle_course_world_f
 #     return obstacle
 
 def modify_sdf_file():
-    with open(original_file, 'r') as original:
-        with open(overwrite_file, 'w') as overwrite:
-            original_lines = original
+    if os.path.exists(overwrite_file):
+        os.remove(overwrite_file)
+    copy2(original_file, overwrite_file)
 
     if randomise:
         print("Modifying gate location...")
@@ -50,7 +50,7 @@ def modify_sdf_file():
         x_offset = -np.random.random()*0.8 
         y_offset = -np.random.random()*0.6
 
-        gate_y_start = -np.random.random() * 0.7 - 1.4
+        gate_y_start = -np.random.random() * 0.5 - 1.4
         gate_y_end = gate_y_start - 1.6
 
         for element in reversed(world): # Remove all coke obstacles
