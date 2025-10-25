@@ -2,14 +2,11 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.logging import set_logger_level, LoggingSeverity
-
-from rclpy.qos import (
-    ReliabilityPolicy,
-    QoSProfile,
-)
+from rclpy.qos import ReliabilityPolicy, QoSProfile
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
 
 
 np.set_printoptions(
@@ -18,23 +15,36 @@ np.set_printoptions(
 
 set_logger_level("obstaclecourse", level=LoggingSeverity.INFO) # Configure to either LoggingSeverity.INFO or LoggingSeverity.DEBUG  
 
-is_simulation = True # Remember to configure this to False if testing for the real lab setup
-if is_simulation:
-    max_translate_velocity = 1.4
-    goal_coordinates = ()
-else:
-    max_translate_velocity = 0.3 # Please keep this in place; 0.3m/s is more than fast enough 
-    goal_coordinates = (0,0)
+class LidarNode(Node):
+    def __init__(self):
+        """Node constructor"""
+        super().__init__("LidarNode")
+        self.sub_scan = self.create_subscription(LaserScan, "scan", self.sub_scan_callback, 2) # Subscribe to lidar
+        self.is_simulation = None
 
+    def sub_scan_callback(self, msg):
+        """Scan subscriber"""
+        if len(msg.ranges ) <= 360: 
+            self.is_simulation = True
+        else:
+            self.is_simulation = False
 
 class ObstacleCourseNode(Node):
     '''Node to navigate obstacle course, using pose from either gazebo odometer or optitrack and lidar scan data'''
-    def __init__(self, goal_coordinates:np.array, is_simulation:bool=True):
+    def __init__(self, is_simulation:bool=True):
         super().__init__('obstaclecourse')
         self.get_logger().info("Starting ObstacleCourseNode")
 
         self.is_simulation = is_simulation
-        self.goal_coordinates = np.array(goal_coordinates)
+
+        if is_simulation:
+            self.max_translate_velocity = 1.4
+            self.goal_coordinates = np.array((5.2, -2.6))
+        else:
+            self.max_translate_velocity = 0.3 # Please keep this in place; 0.3m/s is more than fast enough 
+            self.goal_coordinates = np.array((5.2, -2.6))
+
+        self.sub_scan = self.create_subscription(LaserScan, "scan", self.sub_scan_callback, 2) # Subscribe to LiDAR scan data
 
         # Subscribe to the dynamic_pose topic from Gazebo that publishes ground-truth pose data
         if self.is_simulation:
@@ -50,10 +60,16 @@ class ObstacleCourseNode(Node):
                 )
             
         self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10) # Publish to cmd_vel node       
-        self.timer = self.create_timer(1, self.timer_callback)  # Runs at 20Hz. Can be changed.
+        self.timer = self.create_timer(0.05, self.timer_callback)  # Runs at 20Hz. Can be changed.
 
         self.pose = None
-        self.goal_reached = True
+
+    def sub_scan_callback(self, msg):
+        """Scan subscriber"""
+        if len(msg.ranges) <= 360:
+            self.last_scan = np.array(msg.ranges)
+        else:
+            self.last_scan = np.array(msg.ranges)[::2] 
 
     def yaw_from_quaternion(self, q):
         '''Returns yaw angle (in rad) for orientation based on given quaternion input q'''
@@ -80,9 +96,9 @@ class ObstacleCourseNode(Node):
     def move_2D(self, x:float=0.0, y:float=0.0, turn:float=0.0):
         '''Publishes a Twist message to ROS to move a robot. Inputs are x and y linear velocities, as well as turn (z-axis yaw) angular velocity.'''
         twist_msg = Twist()
-        x = np.clip(x, -max_translate_velocity, max_translate_velocity)
-        y = np.clip(y, -max_translate_velocity, max_translate_velocity)
-        turn = np.clip(turn, -max_translate_velocity*2, max_translate_velocity*2)
+        x = np.clip(x, -self.max_translate_velocity, self.max_translate_velocity)
+        y = np.clip(y, -self.max_translate_velocity, self.max_translate_velocity)
+        turn = np.clip(turn, -self.max_translate_velocity*2, self.max_translate_velocity*2)
         twist_msg.linear.x, twist_msg.linear.y, twist_msg.linear.z = float(x), float(y), 0.0
         twist_msg.angular.x, twist_msg.angular.y, twist_msg.angular.z = 0.0, 0.0, float(turn)
         self.publisher_.publish(twist_msg)
@@ -90,30 +106,36 @@ class ObstacleCourseNode(Node):
     def timer_callback(self):
         """Controller loop. Insert path planning and PID control logic here"""
         if self.pose is None:
+            print("No pose detected")
             return # Does not run if no pose received from Odom or Optitrack
-        elif np.linalg.norm(self.pose - self.goal_coordinates) < 0.05:
+            
+        elif np.linalg.norm(self.pose[:2] - self.goal_coordinates) < 0.05: # If distance to goal is less than 0.05m, consider goal reached and exit
             self.get_logger().info("Goal reached! Exiting script")
             raise SystemExit
         
         ###### INSERT CODE HERE ######
-        self.get_logger().debug(f"Pose: {self.pose}")
-        # self.move_2D(0.3)
+        self.get_logger().info(f"Pose: {self.pose}")
+        self.move_2D(0.1)
         ###### INSERT CODE HERE ######
                 
 
 def main(args=None):
-    global is_simulation
-    print("Starting path planning")
+    print("Starting obstacle course")
     rclpy.init(args=args)
 
-    obstacle = ObstacleCourseNode(is_simulation)
+    # Use lidar scan length to determine if in simulation or not
+    lidar = LidarNode()
+    while lidar.is_simulation is None:
+        rclpy.spin_once(lidar)
+    is_simulation = lidar.is_simulation
+    lidar.destroy_node()
 
-    # Start spinning the waypoint node and only stop once SystemExit error is raised within the node callback
+    # Start spinning the obstacle node and only stop once SystemExit error is raised within the node callback
+    obstacle = ObstacleCourseNode(is_simulation)
     try:
         rclpy.spin(obstacle)
     except SystemExit:
         print("Shutting down")
-
     obstacle.destroy_node()
     rclpy.shutdown()
 

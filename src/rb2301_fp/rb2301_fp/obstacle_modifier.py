@@ -1,0 +1,57 @@
+import numpy as np
+import xml.etree.ElementTree as ET
+import os
+
+randomise = True
+
+workspace_directory = os.path.dirname(os.path.realpath(__file__))[:-20]
+overwrite_file =  workspace_directory + '/rb2301_gz/worlds/obstacle_course_world_fp.sdf'
+
+# def modify_wall_location():
+#     obstacle = ET.Element("include")
+#     uri = ET.Element("uri")
+#     uri.text = obstacle_model
+#     obstacle.append(uri)
+#     name = ET.Element("name")
+#     name.text = f'coke{n}'
+#     obstacle.append(name)
+#     pose = ET.Element("pose")
+#     pose.text = f'{x} {y} 0 0 0 0'
+#     obstacle.append(pose)
+#     return obstacle
+
+
+# def add_coke_element(x, y, n):
+#     obstacle = ET.Element("include")
+#     uri = ET.Element("uri")
+#     uri.text = obstacle_model
+#     obstacle.append(uri)
+#     name = ET.Element("name")
+#     name.text = f'coke{n}'
+#     obstacle.append(name)
+#     pose = ET.Element("pose")
+#     pose.text = f'{x} {y} 0 0 0 0'
+#     obstacle.append(pose)
+#     return obstacle
+
+def modify_sdf_file():
+    if randomise:
+        print("Modifying gate location...")
+        tree = ET.parse(overwrite_file)
+        root = tree.getroot()
+        world = root[0]
+
+        gate_y_start = -np.random.random() * 0.7 - 1.4
+        gate_y_end = gate_y_start - 1.6
+
+        for element in reversed(world): # Remove all coke obstacles
+            if element.tag == 'include':
+                if element[1].text == 'nist_maze_wall_120_configurable_left':
+                    element[2].text = f'4.2 {gate_y_start} -0.7 0 0 1.57079633'
+                elif element[1].text == 'nist_maze_wall_120_configurable_right':
+                    element[2].text = f'4.2 {gate_y_end} -0.7 0 0 1.57079633'
+                    
+        tree.write(overwrite_file)
+
+if __name__ == '__main__':
+    modify_sdf_file()

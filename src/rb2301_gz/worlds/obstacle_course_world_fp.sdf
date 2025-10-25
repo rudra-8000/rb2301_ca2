@@ -1,32 +1,31 @@
-<sdf version='1.6'>
-  <world name='final'>
-    <physics name='1ms' type='ignored'>
+<sdf version="1.6">
+  <world name="empty">
+    <physics name="1ms" type="ignored">
       <max_step_size>0.01</max_step_size>
       <real_time_factor>1</real_time_factor>
       <real_time_update_rate>100</real_time_update_rate>
     </physics>
-    <plugin name='gz::sim::systems::Physics' filename='gz-sim-physics-system'/>
-    <plugin name='gz::sim::systems::UserCommands' filename='gz-sim-user-commands-system'/>
-    <plugin name='gz::sim::systems::SceneBroadcaster' filename='gz-sim-scene-broadcaster-system'/>
-    <plugin name='gz::sim::systems::Contact' filename='gz-sim-contact-system'/>
+    <plugin name="gz::sim::systems::Physics" filename="gz-sim-physics-system" />
+    <plugin name="gz::sim::systems::UserCommands" filename="gz-sim-user-commands-system" />
+    <plugin name="gz::sim::systems::SceneBroadcaster" filename="gz-sim-scene-broadcaster-system" />
+    <plugin name="gz::sim::systems::Contact" filename="gz-sim-contact-system" />
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
     </plugin>
 
     <gravity>0 0 -9.81</gravity>
-    <!-- <gravity>0 0 0</gravity> -->
-    <!-- <magnetic_field>5.5644999999999998e-06 2.2875799999999999e-05 -4.2388400000000002e-05</magnetic_field> -->
-    <atmosphere type='adiabatic'/>
+    <magnetic_field>5.5644999999999998e-06 2.2875799999999999e-05 -4.2388400000000002e-05</magnetic_field>
+    <atmosphere type="adiabatic" />
 
     <scene>
       <ambient>0.400000006 0.400000006 0.400000006 1</ambient>
       <background>0.699999988 0.699999988 0.699999988 1</background>
       <shadows>true</shadows>
     </scene>
-    <model name='ground_plane'>
+    <model name="ground_plane">
       <static>true</static>
-      <link name='link'>
-        <collision name='collision'>
+      <link name="link">
+        <collision name="collision">
           <geometry>
             <plane>
               <normal>0 0 1</normal>
@@ -35,13 +34,13 @@
           </geometry>
           <surface>
             <friction>
-              <ode/>
+              <ode />
             </friction>
-            <bounce/>
-            <contact/>
+            <bounce />
+            <contact />
           </surface>
         </collision>
-        <visual name='visual'>
+        <visual name="visual">
           <geometry>
             <plane>
               <normal>0 0 1</normal>
@@ -73,10 +72,10 @@
       <self_collide>false</self_collide>
     </model>
 
-    <model name='ground_plane_1'>
+    <model name="ground_plane_1">
       <static>true</static>
-      <link name='link'>
-        <collision name='collision'>
+      <link name="link">
+        <collision name="collision">
           <geometry>
             <plane>
               <normal>0 0 1</normal>
@@ -85,13 +84,13 @@
           </geometry>
           <surface>
             <friction>
-              <ode/>
+              <ode />
             </friction>
-            <bounce/>
-            <contact/>
+            <bounce />
+            <contact />
           </surface>
         </collision>
-        <visual name='visual'>
+        <visual name="visual">
           <geometry>
             <plane>
               <normal>0 0 1</normal>
@@ -109,10 +108,10 @@
       <self_collide>false</self_collide>
     </model>
 
-    <model name='ground_plane_2'>
+    <model name="ground_plane_2">
       <static>true</static>
-      <link name='link'>
-        <collision name='collision'>
+      <link name="link">
+        <collision name="collision">
           <geometry>
             <plane>
               <normal>0 0 1</normal>
@@ -121,13 +120,13 @@
           </geometry>
           <surface>
             <friction>
-              <ode/>
+              <ode />
             </friction>
-            <bounce/>
-            <contact/>
+            <bounce />
+            <contact />
           </surface>
         </collision>
-        <visual name='visual'>
+        <visual name="visual">
           <geometry>
             <plane>
               <normal>0 0 1</normal>
@@ -145,255 +144,108 @@
       <self_collide>false</self_collide>
     </model>
 
-    <!-- <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/coke/6</uri>
-      <name>Coke1</name>
-      <pose>1 0 0 0 0 0</pose>
-    </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/coke/6</uri>
-      <name>Coke2</name>
-      <pose>1.5 -0.3 0 0 0 0</pose>
-    </include>
-    <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/coke/6</uri>
-      <name>Coke3</name>
-      <pose>1.7 0.45 0 0 0 0</pose>
-    </include> -->
-
-
-    <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_1</name>
       <pose>0 0 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_2</name>
       <pose>0 -1.2 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_3</name>
       <pose>0 0 -0.7 0 0 1.57079633</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_4</name>
       <pose>1.2 0 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_5</name>
       <pose>1.2 -1.2 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_6</name>
       <pose>2.4 0 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_7</name>
       <pose>2.4 -1.2 -0.7 0 0 1.57079633</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_8</name>
       <pose>3.6 0 -0.7 0 0 1.57079633</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_9</name>
       <pose>2.4 -2.4 -0.7 0 0 1.57079633</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_10</name>
       <pose>3.6 -1.2 -0.7 0 0 1.57079633</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_19</name>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_11</name>
       <pose>2.4 -2.8 -0.7 0 0 1.57079633</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_11</name>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_12</name>
       <pose>3.6 -2.4 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_12</name>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_13</name>
       <pose>2.4 -4.0 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_13</name>
-      <pose>3.6 -4.0 -0.7 0 0 0</pose>
-    </include>
-    
-    <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>nist_maze_wall_120_14</name>
-      <pose>4.2 -1.7 -0.7 0 0 1.57079633</pose>
-    </include>
-    <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_15</name>
-      <pose>4.2 -3.3 -0.7 0 0 1.57079633</pose>
+      <pose>3.6 -4.0 -0.7 0 0 0</pose>
     </include>
 
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_16</name>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_15</name>
       <pose>4.8 -2.4 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_17</name>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_16</name>
       <pose>4.8 -4.0 -0.7 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_18</name>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_17</name>
       <pose>6 -2.4 -0.7 0 0 1.57079633</pose>
     </include>
     <include>
-      <uri>file:///home/marmot/.gz/fuel/fuel.gazebosim.org/openrobotics/models/nist maze wall 120/3</uri>
-      <name>nist_maze_wall_120_20</name>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_18</name>
       <pose>6 -2.8 -0.7 0 0 1.57079633</pose>
     </include>
 
-    <!-- <model name="Moving_Obstacle_1">
-      <pose>4.2 -3.2 0.15 0 0 0</pose>
-      <link name="Moving_Obstacle_Link_1">
-        <inertial>
-          <inertia>
-            <ixx>5.0</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>5.0</iyy>
-            <iyz>0</iyz>
-            <izz>5.0</izz>
-          </inertia>
-          <mass>1.0</mass>
-        </inertial>
-
-        <visual name="Moving_Obstacle_Visual_1">
-          <geometry>
-            <cylinder>
-              <radius>0.1</radius>
-              <length>0.3</length>
-            </cylinder>
-          </geometry>
-          <material>
-            <ambient>0 0 1 1</ambient>
-            <diffuse>0 0 1 1</diffuse>
-            <specular>0 0 1 1</specular>
-          </material>
-        </visual>
-
-        <collision name='collision'> 
-          <geometry>
-            <cylinder>
-              <radius>0.1</radius>
-              <length>0.3</length>
-            </cylinder>
-          </geometry>
-          <surface>
-            <friction>
-              <ode>
-                <mu>0.0001</mu>
-                <mu2>0.0001</mu2>
-              </ode>
-            </friction>
-          </surface>
-        </collision>
-
-      </link>
-
-      <plugin
-        filename="gz-sim-trajectory-follower-system"
-        name="gz::sim::systems::TrajectoryFollower">
-        <link_name>Moving_Obstacle_Link_1</link_name>
-        <loop>true</loop>
-        <force>1</force>
-        <torque>1</torque>
-        <waypoints>
-          <waypoint>4.2 -2.4 0.15</waypoint>
-          <waypoint>4.2 -2.7 0.15</waypoint>
-          <waypoint>4.2 -3.0 0.15</waypoint>
-          <waypoint>4.2 -2.7 0.15</waypoint>
-        </waypoints>
-      </plugin>
-
-    </model>
-
-    <model name="Moving_Obstacle_2">
-      <pose>4.8 -2.2 0.15 0 0 0</pose>
-      <link name="Moving_Obstacle_Link_2">
-        <inertial>
-          <inertia>
-            <ixx>0.16666</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>0.16666</iyy>
-            <iyz>0</iyz>
-            <izz>0.16666</izz>
-          </inertia>
-          <mass>1.0</mass>
-        </inertial>
-
-        <visual name="Moving_Obstacle_Visual_2">
-          <geometry>
-            <cylinder>
-              <radius>0.1</radius>
-              <length>0.3</length>
-            </cylinder>
-          </geometry>
-          <material>
-            <ambient>1 0 0 1</ambient>
-            <diffuse>1 0 0 1</diffuse>
-            <specular>1 0 0 1</specular>
-          </material>
-        </visual>
-        
-        <collision name='collision'> 
-          <geometry>
-            <cylinder>
-              <radius>0.1</radius>
-              <length>0.3</length>
-            </cylinder>
-          </geometry>
-          <surface>
-            <friction>
-              <ode>
-                <mu>0.0</mu>
-                <mu2>0.0</mu2>
-              </ode>
-            </friction>
-          </surface>
-        </collision>
-
-      </link>
-
-      <plugin
-        filename="gz-sim-trajectory-follower-system"
-        name="gz::sim::systems::TrajectoryFollower">
-        <link_name>Moving_Obstacle_Link_2</link_name>
-        <loop>true</loop>
-        <force>5</force>
-        <torque>1</torque>
-        <waypoints>
-          <waypoint>4.8 -3.2 0.15</waypoint>
-          <waypoint>4.8 -2.7 0.15</waypoint>
-          <waypoint>4.8 -2.2 0.15</waypoint>
-          <waypoint>4.8 -2.7 0.15</waypoint>
-        </waypoints>
-      </plugin>
-
-    </model> -->
+    <include>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_configurable_left</name>
+      <pose>4.2 -1.6936075591516904 -0.7 0 0 1.57079633</pose>
+    </include>
+    <include>
+      <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
+      <name>nist_maze_wall_120_configurable_right</name>
+      <pose>4.2 -3.2936075591516905 -0.7 0 0 1.57079633</pose>
+    </include>
 
     <actor name="obstacle_1">
       <static>false</static>
@@ -469,7 +321,7 @@
       </script>
     </actor>
 
-    <light name='sun' type='directional'>
+    <light name="sun" type="directional">
       <pose>0 0 10 0 0 0</pose>
       <cast_shadows>false</cast_shadows>
       <intensity>1</intensity>
