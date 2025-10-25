@@ -251,13 +251,13 @@
     <include>
       <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_17</name>
-      <pose>3.6 -3.6 -0.2 0 0 1.57079633</pose>
+      <pose>3.4 -3.6 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
       <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
       <name>wall_18</name>
-      <pose>3.6 -2.4 -0.2 0 0 1.57079633</pose>
+      <pose>3.4 -2.4 -0.2 0 0 1.57079633</pose>
     </include> 
 
     <include>
@@ -317,7 +317,7 @@
     <include> 
       <uri>package://rb2301_gz/meshes/drawer/2</uri>
       <name>drawer_3</name>
-      <pose>-0.4 0.3 0.0 0 0 0</pose>
+      <pose>-0.4 0.35 0.0 0 0 0</pose>
     </include> 
 
     <include>

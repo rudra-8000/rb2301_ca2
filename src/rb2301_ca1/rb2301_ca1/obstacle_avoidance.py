@@ -47,7 +47,7 @@ class ObstacleAvoidanceNode(Node):
         
         ######################## MODIFY CODE HERE ########################
         print(self.last_scan)
-        # self.move_2D(0.2, 0.0, 0.0)
+        self.move_2D(0.2, 0.0, 0.0)
 
         ######################## MODIFY CODE HERE ########################
 

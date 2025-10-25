@@ -18,13 +18,13 @@ np.set_printoptions(
     2, suppress=True, threshold=np.inf
 )  # Print numpy arrays to specified d.p., suppress scientific notation (e.g. 1e-5), and do not truncate
 
-set_logger_level("path_planning", level=LoggingSeverity.WARN) # Configure to either LoggingSeverity.INFO or LoggingSeverity.DEBUG  
+set_logger_level("waypoint", level=LoggingSeverity.INFO) # Configure to either LoggingSeverity.INFO or LoggingSeverity.DEBUG  
 
-is_simulation = True # Remember to configure this to False if testing for the real lab setup
+is_simulation = False # Remember to configure this to False if testing for the real lab setup
 if is_simulation:
     max_translate_velocity = 1.4
 else:
-    max_translate_velocity = 0.4
+    max_translate_velocity = 0.3 # Please keep this in place; 0.3m/s is more than fast enough 
 
 occupancy_grid_resolution = 0.2
 
@@ -115,11 +115,11 @@ class WaypointNode(Node):
         global sim_grid_start, occupancy_grid_resolution
         if self.pose is None:
             return # Does not run if no pose received from Odom or Optitrack
-        self.get_logger().info(f"Pose: {self.pose}")
+        self.get_logger().debug(f"Pose: {self.pose}")
 
         if self.goal_reached:
             if self.current_goal_idx >= len(self.goal_list):
-                self.get_logger().warn("All goals reached")
+                self.get_logger().info("All goals reached")
                 raise SystemExit # Will exit out of the spin loop due to the try/except catch
             
             # Initialise the relevant map/grid variables, mainly start and goal indices
@@ -136,7 +136,7 @@ class WaypointNode(Node):
             goal = (int(goal_coords[0]//resolution - x_start//resolution), int(goal_coords[1]//resolution - y_start//resolution))
             
             if start == goal:
-                self.get_logger().warn("Already at goal, moving to next goal")
+                self.get_logger().info("Already at goal, moving to next goal")
                 self.goal_reached = True
                 self.current_goal_idx += 1
                 return
@@ -157,36 +157,37 @@ class WaypointNode(Node):
 
         else:
             if self.current_waypoint_idx == len(self.waypoints): # All waypoints reached, means goal reached
-                self.get_logger().warn("Goal reached!")
+                self.get_logger().info("Goal reached!")
                 self.goal_reached = True
                 self.current_goal_idx += 1
 
                 if self.current_goal_idx >= len(self.goal_list): # All goals reached, exit system
-                    self.get_logger().warn("All goals reached!")
+                    self.get_logger().info("All goals reached!")
                     raise SystemExit # Exit and stop spin so rclpy can shutdown
 
             else:
                 target_waypoint = np.array(self.waypoints[self.current_waypoint_idx])
-                if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.03: # If less than threshold distance away from target waypoint
+                if np.linalg.norm(self.pose[:2] - target_waypoint) < 0.05: # If less than threshold distance away from target waypoint
                     self.move_2D() # Stop
                     if self.current_waypoint_idx+1 != len(self.waypoints):
                         self.get_logger().info(f"Waypoint {target_waypoint} reached. Next target is {self.waypoints[self.current_waypoint_idx+1]}")
                     self.current_waypoint_idx += 1 # Set next waypoint
 
                 else:
+                    
                     if not heading_movement:
                         # Strafe variation; only x and y linear velocites
                         x = target_waypoint[0] - self.pose[0]
                         y = target_waypoint[1] - self.pose[1]
 
-                        if 0.0 < x < 0.3:
-                            x = 0.3
-                        elif -0.3 < x < 0.0:
-                            x = -0.3
-                        if 0.0 < y < 0.3:
-                            y = 0.3
-                        elif -0.3 < y < 0.0:
-                            y = -0.3
+                        if 0.0 < x < max_translate_velocity/5:
+                            x = max_translate_velocity/5
+                        elif -max_translate_velocity/5 < x < 0.0:
+                            x = -max_translate_velocity/5
+                        if 0.0 < y < max_translate_velocity/5:
+                            y = max_translate_velocity/5
+                        elif -max_translate_velocity/5 < y < 0.0:
+                            y = -max_translate_velocity/5
 
                         self.move_2D(x, y)
 
@@ -203,19 +204,19 @@ class WaypointNode(Node):
                         elif heading_delta > 180:
                             heading_delta -= 360
                             
-                        if abs(heading_delta) < 30: # Only have forward movement if heading is within +- 30deg
+                        if abs(heading_delta) < 20: # Only have forward movement if heading is within +- 20deg
                             x_vel = np.sqrt(x_delta**2 + y_delta**2)
-                            if 0.0 < x_vel < 0.2:
-                                x_vel = 0.2
-                            elif -0.2 < x_vel < 0.0:
-                                x_vel = -0.2
+                            if 0.0 < x_vel < max_translate_velocity/5:
+                                x_vel = max_translate_velocity/5
+                            elif -max_translate_velocity/5 < x_vel < 0.0:
+                                x_vel = -max_translate_velocity/5
                         else:
                             if np.linalg.norm(self.pose[:2] - target_waypoint) > 0.1: 
                                 x_vel = 0.0
                             else:
-                                x_vel = 0.5  # If near target, don't care about adjusting heading since it'll fluctuate wildly
+                                x_vel = max_translate_velocity/2  # If near target, don't care about adjusting heading since it'll fluctuate wildly
 
-                        self.move_2D(x_vel, 0.0, np.deg2rad(heading_delta)*2)
+                        self.move_2D(x_vel, 0.0, np.deg2rad(heading_delta)*3.5)
                     
 
 class Grid():

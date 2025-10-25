@@ -34,7 +34,7 @@ def generate_launch_description():
     arg_world = DeclareLaunchArgument(
         'world', 
         # default_value='empty.sdf',
-        default_value='path_planning_world_ca2.sdf', # RB2301 Path-Planning
+        default_value='obstacle_course_world_fp.sdf', # RB2301 Path-Planning
         description='Name of the Gazebo world file to load'
     )
     path_world = PathJoinSubstitution([
