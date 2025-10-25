@@ -8,11 +8,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
-
-np.set_printoptions(
-    2, suppress=True, threshold=np.inf
-)  # Print numpy arrays to specified d.p., suppress scientific notation (e.g. 1e-5), and do not truncate
-
+np.set_printoptions(2, suppress=True, threshold=np.inf) # Print numpy arrays to specified d.p., suppress scientific notation and do not truncate
 set_logger_level("obstaclecourse", level=LoggingSeverity.INFO) # Configure to either LoggingSeverity.INFO or LoggingSeverity.DEBUG  
 
 class LidarNode(Node):
@@ -24,7 +20,7 @@ class LidarNode(Node):
 
     def sub_scan_callback(self, msg):
         """Scan subscriber"""
-        if len(msg.ranges ) <= 360: 
+        if len(msg.ranges) <= 360: 
             self.is_simulation = True
         else:
             self.is_simulation = False
