@@ -35,10 +35,8 @@ class ObstacleCourseNode(Node):
 
         if is_simulation:
             self.max_translate_velocity = 1.4
-            self.goal_coordinates = np.array((5.2, -2.6))
         else:
             self.max_translate_velocity = 0.3 # Please keep this in place; 0.3m/s is more than fast enough 
-            self.goal_coordinates = np.array((5.2, -2.6))
 
         self.sub_scan = self.create_subscription(LaserScan, "scan", self.sub_scan_callback, 2) # Subscribe to LiDAR scan data
 
@@ -104,10 +102,6 @@ class ObstacleCourseNode(Node):
         if self.pose is None:
             print("No pose detected")
             return # Does not run if no pose received from Odom or Optitrack
-            
-        elif np.linalg.norm(self.pose[:2] - self.goal_coordinates) < 0.05: # If distance to goal is less than 0.05m, consider goal reached and exit
-            self.get_logger().info("Goal reached! Exiting script")
-            raise SystemExit
         
         ###### INSERT CODE HERE ######
         self.get_logger().info(f"Pose: {self.pose}")
