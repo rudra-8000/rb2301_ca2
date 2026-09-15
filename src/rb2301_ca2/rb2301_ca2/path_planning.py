@@ -28,7 +28,7 @@ else:
 
 occupancy_grid_resolution = 0.2
 
-sim_goal_list = [(3.4, -3.6), (3.2, 0.2), (2.4, -3.6), (-0.4, -3.8)]
+sim_goal_list = [(3.4, -0.4), (3.2, -4.2), (2.4, -0.4), (-0.4, -0.2)]  # updated to match a y-axis fix applied to ca2_sim_map.npy -- see maze_sim.yaml
 sim_grid_start = (-1.0, -5.0)
 
 irl_goal_list = [(2.1, -1.7), (2.3, -0.3), (1.5, -1.7), (0.3, -1.7)]
