@@ -5,7 +5,7 @@ from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 from launch.actions import SetEnvironmentVariable
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution, Command
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution, Command, PythonExpression
 
 def generate_launch_description():
     ld = LaunchDescription()
@@ -42,6 +42,19 @@ def generate_launch_description():
     ])
     ld.add_action(arg_world)
 
+    # headless: run Gazebo server-only (no GUI window). Use this over a remote/SSH
+    # session with no reachable X display -- physics and /odom still work normally,
+    # only the 3D viewer is skipped.
+    arg_headless = DeclareLaunchArgument(
+        'headless',
+        default_value='false',
+        description='Run Gazebo server-only, without the GUI (for remote/no-display testing)'
+    )
+    ld.add_action(arg_headless)
+    headless_flag = PythonExpression([
+        "'-s' if '", LaunchConfiguration('headless'), "' == 'true' else ''"
+    ])
+
     # publishes the robot states into robot_description topic, along with transforms.
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
@@ -75,9 +88,10 @@ def generate_launch_description():
         launch_arguments={
             'gz_args': [
                 path_world,
-                TextSubstitution(text=' -r -v -v1'), # for non-VBox users
+                TextSubstitution(text=' -r -v -v1 '), # for non-VBox users
                 # TextSubstitution(text=' -r -v -v1 --render-engine ogre'), # DO NOT USE: this may cause the last reading for VBox users to become 0.05. -r for autorun, -v for verbose, v1 for level 1 verbose.
-            ], 
+                headless_flag, # '-s' (server-only, no GUI) when headless:=true, else empty
+            ],
         }.items()
     )
     ld.add_action(launch_gz_sim)
