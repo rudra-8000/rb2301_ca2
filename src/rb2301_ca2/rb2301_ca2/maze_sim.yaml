@@ -1,0 +1,12 @@
+# Fixed Gazebo simulation test room. Not part of the maze_id-selectable set -- there is
+# only one CA2 Gazebo world (path_planning_world_ca2.sdf), which physically matches this
+# map's size/origin, not the (much smaller) real mazes.
+description: "Gazebo simulation test room (path_planning_world_ca2.sdf)"
+resolution: 0.2
+origin: [-1.0, -5.0]
+map_file: ca2_sim_map.npy
+goal_list:
+  - [3.4, -3.6]
+  - [3.2, 0.2]
+  - [2.4, -3.6]
+  - [-0.4, -3.8]

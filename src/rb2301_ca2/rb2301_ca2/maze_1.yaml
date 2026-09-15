@@ -1,0 +1,9 @@
+# Maze 1 -- second physical copy of the SAME maze structure (see lab_maze_layout.yaml),
+# placed at a different spot on the OptiTrack floor. Only `origin` should differ from
+# maze_0.yaml. `origin` below is a placeholder (currently identical to maze 0's) since
+# the second maze's real position hasn't been measured yet -- update it here once it has;
+# no other file needs to change.
+maze_id: 1
+description: "Second real maze -- placeholder origin, currently identical to maze 0"
+origin: [0.1, -1.9]
+layout: lab_maze_layout

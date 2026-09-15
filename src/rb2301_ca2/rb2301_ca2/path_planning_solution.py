@@ -13,37 +13,56 @@ from nav_msgs.msg import Odometry
 from PIL import Image
 from geometry_msgs.msg import Twist
 
+from . import maze_config
+
 
 np.set_printoptions(
     2, suppress=True, threshold=np.inf
 )  # Print numpy arrays to specified d.p., suppress scientific notation (e.g. 1e-5), and do not truncate
 
-set_logger_level("waypoint", level=LoggingSeverity.INFO) # Configure to either LoggingSeverity.INFO or LoggingSeverity.DEBUG  
+set_logger_level("waypoint", level=LoggingSeverity.INFO) # Configure to either LoggingSeverity.INFO or LoggingSeverity.DEBUG
 
 is_simulation = False # Remember to configure this to False if testing for the real lab setup
 if is_simulation:
     max_translate_velocity = 1.4
 else:
-    max_translate_velocity = 0.3 # Please keep this in place; 0.3m/s is more than fast enough 
-
-occupancy_grid_resolution = 0.2
-
-sim_goal_list = [(3.4, -3.6), (3.2, 0.2), (2.4, -3.6), (-0.4, -3.8)]
-sim_grid_start = (-1.0, -5.0)
-
-irl_goal_list = [(2.1, -1.7), (2.3, -0.3), (1.5, -1.7), (0.3, -1.7)]
-irl_grid_start = (0.1, -1.9)
+    max_translate_velocity = 0.3 # Please keep this in place; 0.3m/s is more than fast enough
 
 heading_movement = True
 
 
 class WaypointNode(Node):
     '''Node to calculate path and move robot towards given goal_coordinates, using pose info from either gazebo odometer or optitrack'''
-    def __init__(self, map_array:np.array, goal_list:list, is_simulation:bool=True):
+    def __init__(self, is_simulation:bool=True):
         super().__init__('waypoint')
         self.get_logger().info("Starting WaypointNode")
 
         self.is_simulation = is_simulation
+
+        # Load the maze config for this run. In simulation there is only one Gazebo world,
+        # so it always uses the fixed sim test-room config. On the real robot, maze_id is a
+        # runtime-selectable parameter so students can switch between physical mazes without
+        # touching code -- an invalid maze_id raises here and aborts startup with a clear
+        # error rather than silently falling back to a default.
+        if self.is_simulation:
+            self.maze_config = maze_config.load_sim_config()
+            self.get_logger().info(
+                f"Running in SIMULATION -- using fixed test maze ({self.maze_config.description}): "
+                f"{self.maze_config.width}x{self.maze_config.height} cells, "
+                f"resolution={self.maze_config.resolution}m, "
+                f"origin=({self.maze_config.origin_x}, {self.maze_config.origin_y}). "
+                f"maze_id parameter is not applicable in simulation."
+            )
+        else:
+            self.declare_parameter('maze_id', 0)
+            maze_id = self.get_parameter('maze_id').get_parameter_value().integer_value
+            self.maze_config = maze_config.load_maze_config(maze_id)
+            self.get_logger().info(
+                f"Running on REAL ROBOT -- selected maze_id={maze_id} ({self.maze_config.description}): "
+                f"{self.maze_config.width}x{self.maze_config.height} cells, "
+                f"resolution={self.maze_config.resolution}m, "
+                f"origin=({self.maze_config.origin_x}, {self.maze_config.origin_y})"
+            )
 
         # Subscribe to the dynamic_pose topic from Gazebo that publishes ground-truth pose data
         if self.is_simulation:
@@ -51,18 +70,18 @@ class WaypointNode(Node):
         else:
             qos_profile = QoSProfile(depth=2, reliability=ReliabilityPolicy.BEST_EFFORT)
 
-            self.map_sub = self.create_subscription( 
+            self.map_sub = self.create_subscription(
                 PoseStamped,
                 '/vrpn_mocap/bingda_003/pose',
-                self.optitrack_callback, 
+                self.optitrack_callback,
                 qos_profile
                 )
-            
-        self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10) # Publish to cmd_vel node       
+
+        self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10) # Publish to cmd_vel node
         self.timer = self.create_timer(0.05, self.timer_callback)  # Runs at 20Hz. Can be changed.
 
-        self.goal_list = goal_list
-        self.map_array = map_array
+        self.goal_list = self.maze_config.goal_list
+        self.map_array = self.maze_config.map_array
 
         self.pose = None
         self.waypoint_list = None
@@ -112,7 +131,6 @@ class WaypointNode(Node):
 
     def timer_callback(self):
         """Controller loop. Insert path planning and PID control logic here"""
-        global sim_grid_start, occupancy_grid_resolution
         if self.pose is None:
             return # Does not run if no pose received from Odom or Optitrack
         self.get_logger().debug(f"Pose: {self.pose}")
@@ -121,20 +139,19 @@ class WaypointNode(Node):
             if self.current_goal_idx >= len(self.goal_list):
                 self.get_logger().info("All goals reached")
                 raise SystemExit # Will exit out of the spin loop due to the try/except catch
-            
+
             # Initialise the relevant map/grid variables, mainly start and goal indices
             start_coords = self.pose[:2] # Get coords from odom/optitrack
-            # start_coords = np.round(start_coords, 1) 
-            if self.is_simulation:
-                x_start, y_start, resolution = sim_grid_start[0], sim_grid_start[1], occupancy_grid_resolution
-            else:
-                x_start, y_start, resolution = irl_grid_start[0], irl_grid_start[1], occupancy_grid_resolution
-
             goal_coords = self.goal_list[self.current_goal_idx]
-            # Conversion between numerical coordinates and array indices
-            start = (int(start_coords[0]//resolution - x_start//resolution), int(start_coords[1]//resolution - y_start//resolution))
-            goal = (int(goal_coords[0]//resolution - x_start//resolution), int(goal_coords[1]//resolution - y_start//resolution))
-            
+            # Conversion between world coordinates and array indices, derived from this
+            # maze's actual origin/resolution -- see maze_config.py for the frame convention.
+            try:
+                start = maze_config.world_to_grid(start_coords[0], start_coords[1], self.maze_config)
+                goal = maze_config.world_to_grid(goal_coords[0], goal_coords[1], self.maze_config)
+            except ValueError as e:
+                self.get_logger().error(f"Cannot plan to next goal: {e}")
+                raise SystemExit
+
             if start == goal:
                 self.get_logger().info("Already at goal, moving to next goal")
                 self.goal_reached = True
@@ -149,10 +166,11 @@ class WaypointNode(Node):
             waypoint_list = convert_path_to_waypoints(solution_path)
             if self.is_simulation: grid.draw_grid_map(waypoint_list, solution_path)
 
-            # Set the proper waypoints using given solutions
+            # Set the proper waypoints using given solutions (grid index -> world-frame
+            # coordinate of that cell's CENTER, not its corner)
             coordinate_waypoints = []
             for point in waypoint_list:
-                coordinate_waypoints.append((point[0]*resolution+x_start, point[1]*resolution+y_start))
+                coordinate_waypoints.append(maze_config.grid_to_world(point[0], point[1], self.maze_config))
             self.set_waypoints(coordinate_waypoints)
 
         else:
@@ -439,15 +457,9 @@ def main(args=None):
     print("Starting path planning")
     rclpy.init(args=args)
 
-    # Load the proper occupancy grid numpy array
-    import os
-    filepath = os.path.dirname(os.path.realpath(__file__))
-    if is_simulation:
-        map_array = np.load(filepath + '/ca2_sim_map.npy', allow_pickle=True)
-        waypoint = WaypointNode(map_array, sim_goal_list, is_simulation)
-    else:
-        map_array = np.load(filepath + '/ca2_irl_map.npy', allow_pickle=True)
-        waypoint = WaypointNode(map_array, irl_goal_list, is_simulation)
+    # WaypointNode loads its own maze config (sim test room, or the maze_id-selected real
+    # maze) internally -- see maze_config.py.
+    waypoint = WaypointNode(is_simulation)
 
     # Start spinning the waypoint node and only stop once SystemExit error is raised within the node callback
     try:
@@ -459,8 +471,4 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    # main()
-    import os
-    filepath = os.path.dirname(os.path.realpath(__file__))
-    map_array = np.load(filepath + '/ca2_irl_map.npy', allow_pickle=True)
-    print(map_array.shape)
+    main()

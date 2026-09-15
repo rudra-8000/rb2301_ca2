@@ -6,6 +6,13 @@ setup(
     name=package_name,
     version='0.0.0',
     packages=find_packages(exclude=['test']),
+    package_data={
+        # Occupancy-grid arrays and maze config YAML files are loaded at runtime relative
+        # to this package's install location (see maze_config.py) -- they must be shipped
+        # as package data, or a non-symlink `colcon build` silently omits them.
+        package_name: ['*.npy', '*.yaml'],
+    },
+    include_package_data=True,
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -21,6 +28,7 @@ setup(
     entry_points={
         'console_scripts': [
             'path_planning = rb2301_ca2.path_planning:main',
+            'ca2_solution = rb2301_ca2.path_planning_solution:main',
         ],
     },
 )

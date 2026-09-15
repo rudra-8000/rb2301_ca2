@@ -1,0 +1,8 @@
+# Maze 0 -- default real-robot maze instance, tracked via OptiTrack. The actual map/
+# resolution/goal data lives in lab_maze_layout.yaml (shared with maze 1, since they're
+# the same physical structure); this file only says where THIS instance sits in the
+# shared OptiTrack world frame. See maze_config.py for the full frame convention.
+maze_id: 0
+description: "Physical lab maze on the OptiTrack floor (default maze)"
+origin: [0.1, -1.9]
+layout: lab_maze_layout

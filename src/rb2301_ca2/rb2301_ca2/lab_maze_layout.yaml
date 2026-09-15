@@ -1,0 +1,13 @@
+# Shared physical layout for the two real mazes (maze_id 0 and 1): they are two physical
+# copies of the SAME maze structure placed at different spots on the OptiTrack floor, so
+# only each instance's origin differs -- see maze_0.yaml/maze_1.yaml and the frame
+# convention docstring in maze_config.py.
+resolution: 0.2
+map_file: ca2_irl_map.npy
+# Each goal's position relative to THIS maze's own origin (as if origin were (0,0));
+# maze_config.py adds the instance's actual origin to get world-frame coordinates.
+goal_list_local:
+  - [2.0, 0.2]
+  - [2.2, 1.6]
+  - [1.4, 0.2]
+  - [0.2, 0.2]
