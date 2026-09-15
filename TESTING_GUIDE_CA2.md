@@ -82,10 +82,19 @@ roughly in the middle of an open corridor, not on a wall. Try a point you know i
 
 If you're testing over SSH/remote with no reachable display, use
 `./gz_ca2.sh headless` instead of `./gz_ca2.sh` -- runs Gazebo server-only (no GUI
-window), so it won't crash trying to connect to X. Physics and `/odom` work identically;
-you just don't get the 3D viewer or `draw_grid_map()`'s popup images (those still try to
-open a window and will error/no-op without a display -- safe to ignore, or check the
-terminal logs / `ros2 topic echo /odom` instead).
+window). This still needs *some* render context for the robot's camera/LiDAR sensors, so
+also install a virtual display once: `sudo apt-get install -y xvfb` (`gz_ca2.sh` detects
+and uses it automatically). You won't get the 3D viewer or `draw_grid_map()`'s popup
+images (those still try to open a window and will error/no-op without a display -- safe
+to ignore, or check the terminal logs / `ros2 topic echo /odom` instead).
+
+If `/odom` isn't publishing (e.g. your Gazebo build's `OdometryPublisher` plugin naming
+doesn't match -- a Fortress-vs-Harmonic version thing, not a project bug), you can still
+get live ground-truth pose for manual verification via
+`ros2 topic echo /world/empty/dynamic_pose/info` (bridged for exactly this diagnostic
+purpose -- look for `child_frame_id: nanocar`). Note `path_planning_solution.py` itself
+still reads `/odom`, not this, so a working `/odom` is what you need for the actual
+solution to run end-to-end.
 
 ```bash
 ./gz_ca2.sh        # terminal 1 -- launches Gazebo with the CA2 world (add "headless" if remote)

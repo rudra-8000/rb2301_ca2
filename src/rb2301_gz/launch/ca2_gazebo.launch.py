@@ -135,7 +135,12 @@ def generate_launch_description():
             "/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V",
             "/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan",
             "/imu@sensor_msgs/msg/Imu@gz.msgs.IMU",
-            # "/world/empty/dynamic_pose/info@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V", # This topic publishes ground-truth pose of the gz sim actors. No need since we have odom
+            # Ground-truth pose of all sim actors, independent of the OdometryPublisher
+            # plugin -- useful for manual verification (e.g. `ros2 topic echo` it) if
+            # /odom isn't populated (e.g. a Gazebo version whose OdometryPublisher plugin
+            # naming doesn't match, like Fortress vs Harmonic). path_planning_solution.py
+            # itself still reads /odom, not this -- it's a diagnostic-only bridge.
+            "/world/empty/dynamic_pose/info@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V",
         ],
         output="screen",
         parameters=[
