@@ -80,8 +80,15 @@ roughly in the middle of an open corridor, not on a wall. Try a point you know i
 
 ## 4. Simulation test (student workflow, per slide 38)
 
+If you're testing over SSH/remote with no reachable display, use
+`./gz_ca2.sh headless` instead of `./gz_ca2.sh` -- runs Gazebo server-only (no GUI
+window), so it won't crash trying to connect to X. Physics and `/odom` work identically;
+you just don't get the 3D viewer or `draw_grid_map()`'s popup images (those still try to
+open a window and will error/no-op without a display -- safe to ignore, or check the
+terminal logs / `ros2 topic echo /odom` instead).
+
 ```bash
-./gz_ca2.sh        # terminal 1 -- launches Gazebo with the CA2 world
+./gz_ca2.sh        # terminal 1 -- launches Gazebo with the CA2 world (add "headless" if remote)
 ./ca2.sh           # terminal 2 -- runs YOUR path_planning.py code
 # or, to test the reference solution instead of a student's own code:
 ./ca2_solution.sh  # terminal 2 -- runs path_planning_solution.py
