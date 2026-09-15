@@ -41,9 +41,15 @@ def render(cfg, point=None, out_path=None):
     fig, ax = plt.subplots(figsize=(max(4, cfg.width / 4), max(4, cfg.height / 4)))
 
     # map_array is indexed [ix, iy] (axis0=x, axis1=y -- see maze_config.py). imshow wants
-    # [row, col] with row 0 at the top, so transpose (iy becomes row) and flip vertically
-    # so +y still points up on screen, matching the world frame.
-    display = np.flipud(cfg.map_array.T)
+    # [row, col], so transpose (iy becomes row). With origin="lower" below, row 0 is drawn
+    # at the BOTTOM of the axes (lowest y) and the last row at the top (highest y) -- which
+    # is exactly what transposing alone gives (row r == iy == r), so no extra flip is
+    # needed here. (An earlier version added np.flipud on top of this, which double-flipped
+    # the image into a vertical mirror of the real array -- confirmed by rendering a
+    # synthetic grid with one marked cell and sampling the actual pixel color under it.
+    # The numeric --point / --set-cell paths read the array directly and were unaffected;
+    # only the rendered picture was wrong.)
+    display = cfg.map_array.T
     extent = [
         cfg.origin_x, cfg.origin_x + cfg.width * cfg.resolution,
         cfg.origin_y, cfg.origin_y + cfg.height * cfg.resolution,
