@@ -1,17 +1,15 @@
 <sdf version="1.6">
   <world name="empty">
     <physics name="1ms" type="ignored">
-      <max_step_size>0.01</max_step_size>
+      <max_step_size>0.001</max_step_size>
       <real_time_factor>1</real_time_factor>
-      <real_time_update_rate>100</real_time_update_rate>
+      <real_time_update_rate>1000</real_time_update_rate>
     </physics>
     <plugin name="gz::sim::systems::Physics" filename="gz-sim-physics-system" />
     <plugin name="gz::sim::systems::UserCommands" filename="gz-sim-user-commands-system" />
     <plugin name="gz::sim::systems::SceneBroadcaster" filename="gz-sim-scene-broadcaster-system" />
     <plugin name="gz::sim::systems::Contact" filename="gz-sim-contact-system" />
-    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-      <render_engine>ogre2</render_engine>
-    </plugin>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors" />
 
     <gravity>0 0 -9.81</gravity>
     <magnetic_field>5.5644999999999998e-06 2.2875799999999999e-05 -4.2388400000000002e-05</magnetic_field>
@@ -71,80 +69,6 @@
       <pose>0 0 0 0 0 0</pose>
       <self_collide>false</self_collide>
     </model>
-
-    <model name="ground_plane_1">
-      <static>true</static>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <surface>
-            <friction>
-              <ode />
-            </friction>
-            <bounce />
-            <contact />
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <ambient>0.800000012 0.800000012 0.800000012 1</ambient>
-            <diffuse>0.800000012 0.800000012 0.800000012 1</diffuse>
-            <specular>0.800000012 0.800000012 0.800000012 1</specular>
-          </material>
-        </visual>
-      </link>
-      <pose>-2.4852922822011769 -1.7563776762673191 0 0 0 0</pose>
-      <self_collide>false</self_collide>
-    </model>
-
-    <model name="ground_plane_2">
-      <static>true</static>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <surface>
-            <friction>
-              <ode />
-            </friction>
-            <bounce />
-            <contact />
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <ambient>0.800000012 0.800000012 0.800000012 1</ambient>
-            <diffuse>0.800000012 0.800000012 0.800000012 1</diffuse>
-            <specular>0.800000012 0.800000012 0.800000012 1</specular>
-          </material>
-        </visual>
-      </link>
-      <pose>-6.0943901708632628 -2.7240120998093884 0 0 0 0</pose>
-      <self_collide>false</self_collide>
-    </model>
-
-
     
     <include>
       <uri>package://rb2301_gz/meshes/nist maze wall 120/3</uri>
